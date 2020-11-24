@@ -43,6 +43,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo "$HOME/bin" >> $GITHUB_PATH
         echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+        echo "PYTEST_ADDOPTS=--basetemp=build" >> $GITHUB_ENV
     - name: Test
       run: |
         python3 -m pytest -n $(nproc) -vv
