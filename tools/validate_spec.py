@@ -209,14 +209,22 @@ class Validator:
             validation_result.correct_serialization = (
                 parsed_message.bytestring == original_message.bytes
             )
+            if not validation_result.correct_serialization:
+                validation_result.error_message = (
+                    "Invalid serialization"
+                    f"\ngot:      {parsed_message.bytestring.hex()}"
+                    f"\nexpected: {original_message.bytes.hex()}"
+                )
         else:
             validation_result.correct_serialization = False
 
-        if parser_result.is_valid and original_message.is_valid:
+        is_valid = parser_result.is_valid and validation_result.correct_serialization
+
+        if is_valid and original_message.is_valid:
             validation_result.classification = Classification.TP
-        elif parser_result.is_valid and not original_message.is_valid:
+        elif is_valid and not original_message.is_valid:
             validation_result.classification = Classification.FP
-        elif not parser_result.is_valid and original_message.is_valid:
+        elif not is_valid and original_message.is_valid:
             validation_result.classification = Classification.FN
         else:
             validation_result.classification = Classification.TN
@@ -277,6 +285,7 @@ class ValidationResult:
         self.__original_message: OriginalMessage = original_message
         self.classification: Classification = Classification.NI
         self.correct_serialization: Optional[bool] = None
+        self.error_message: str = parser_result.error_message
 
     def get_json_output(self) -> Dict[str, object]:
         parsed_message = self.__parser_result.parsed_message
@@ -301,7 +310,7 @@ class ValidationResult:
             "original": self.__original_message.bytes.hex(),
             "parsed": parsed_message.bytestring.hex() if parsed_message is not None else "",
             "parsed_field_values": parsed_field_values,
-            "error_message": self.__parser_result.error_message,
+            "error_message": self.error_message,
             "provided_as": self.__original_message.is_valid,
             "recognized_as": self.__parser_result.is_valid,
             "classification": self.classification.value,
@@ -319,7 +328,7 @@ class ValidationResult:
             f"classification: {self.classification.value}, "
             f"identifier: {identifier}, "
             f"file name: {self.__original_message.file_name}, "
-            f"error: {self.__parser_result.error_message}"
+            f"error: {self.error_message}"
         )
         return output
 
