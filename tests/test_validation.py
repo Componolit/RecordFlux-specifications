@@ -1,39 +1,33 @@
 from tools.validate_spec import cli
 
 
-def test_validate_ethernet() -> None:
+def validate_spec(spec: str, message: str, sample_dir: str = None) -> None:
+    sample_dir = sample_dir or spec
     assert (
         cli(
             [
                 "validate_spec",
                 "-s",
-                "in_ethernet.rflx",
+                f"{spec}.rflx",
                 "-m",
-                "Ethernet::Frame",
+                message,
                 "-v",
-                "tests/data/ethernet/valid",
+                f"tests/data/{sample_dir}/valid",
                 "-i",
-                "tests/data/ethernet/invalid",
+                f"tests/data/{sample_dir}/invalid",
             ]
         )
         == 0
     )
+
+
+def test_validate_ethernet() -> None:
+    validate_spec("in_ethernet", "Ethernet::Frame", "ethernet")
 
 
 def test_validate_arp() -> None:
-    assert (
-        cli(
-            [
-                "validate_spec",
-                "-s",
-                "arp.rflx",
-                "-m",
-                "ARP::IPv4",
-                "-v",
-                "tests/data/arp/valid",
-                "-i",
-                "tests/data/arp/invalid",
-            ]
-        )
-        == 0
-    )
+    validate_spec("arp", "ARP::IPv4")
+
+
+def test_validate_ipv6() -> None:
+    validate_spec("ipv6", "IPv6::Packet")
