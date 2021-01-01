@@ -30,4 +30,4 @@ def test_validate_arp() -> None:
 
 
 def test_validate_ipv6() -> None:
-    validate_spec("ipv6", "IPv6::Packet")
+    validate_spec("in_ipv6", "IPv6::Packet", "ipv6")
