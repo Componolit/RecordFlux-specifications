@@ -1,13 +1,13 @@
 with Ethernet;
 with IPv4;
-with ARP;
+with IPv6;
 
 package In_Ethernet is
 
    for Ethernet::Frame use (Payload => IPv4::Packet)
       if Ether_Type = ET_IPv4;
 
-   for Ethernet::Frame use (Payload => ARP::IPv4)
-      if Ether_Type = ET_ARP;
+   for Ethernet::Frame use (Payload => IPv6::Packet)
+      if Ether_Type = ET_IPv6;
 
 end In_Ethernet;
