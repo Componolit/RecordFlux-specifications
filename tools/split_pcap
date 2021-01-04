@@ -1,0 +1,41 @@
+#!/bin/sh -eu
+
+infile=$1
+
+if [ ! -f ${infile} ];
+then
+   echo "Input file \"${infile}\" not found"
+   exit 1
+fi
+
+which editcap > /dev/null
+if [ ! $? ];
+then
+   echo "Binary editcap not found"
+   exit 1
+fi
+
+which tshark > /dev/null
+if [ ! $? ];
+then
+   echo "Binary tshark not found"
+   exit 1
+fi
+
+which xxd > /dev/null
+if [ ! $? ];
+then
+   echo "Binary xxd not found"
+   exit 1
+fi
+
+TMPDIR=$(mktemp -d)
+editcap -F pcapng -c1 ${infile} ${TMPDIR}/tmp.pcapng
+for f in ${TMPDIR}/*.pcapng;
+do
+   tmp=${f#${TMPDIR}/tmp_}
+   num=${tmp%_*.pcapng}
+   outfile=${infile%.pcapng}_${num}.dat
+   echo "Writing ${outfile}"
+   tshark -x -r $f | xxd -r - ${outfile}
+done

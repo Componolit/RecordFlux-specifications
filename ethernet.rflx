@@ -76,4 +76,15 @@ package Ethernet is
                if Payload'Size / 8 >= 46 and Payload'Size / 8 <= 1500;
       end message;
 
+   type FCS_Type is mod 2**32;
+
+   type Frame_With_FCS is
+      message
+         Data : Opaque
+            with Size => Message'Size - 32
+               if Message'Size > 32;
+         FCS : FCS_Type;
+      end message;
+   for Frame_With_FCS use (Data => Frame);
+
 end Ethernet;
