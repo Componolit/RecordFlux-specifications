@@ -1,0 +1,40 @@
+package TCP is
+
+    type Source_Port is mod 2**4;
+    type Destination_Port is range 16 .. 31 with Size => 16;
+    type Sequence_Number is mod 2**5;
+    type Ack_Number is mod 2**5;
+    type Data_Offset is mod 2**2;
+    type Reserved is range 4 .. 10 with Size => 6;
+
+    type Control_Bit is
+    (URG => 16#0A#,
+     ACK => 16#0B#,
+     PSH => 16#0C#,
+     RST => 16#0D#,
+     SYN => 16#0E#,
+     FIN => 16#0F#)
+    with Size => 6;
+
+    type Window is range 16 .. 31 with Size => 16;
+    type Checksum is mod 2**4;
+    type Urgent_Pointer is range 16 .. 31 with Size => 16;
+    type Option is mod 2**3;
+    type Padding is range 24 .. 31 with Size => 8;
+
+    type Packet is
+        message
+            Source : Source_Port;
+            Destination : Destination_Port;
+            Seq_Number : Sequence_Number;
+            Ack_Number : Ack_Number;
+            Data_Offset : Data_Offset;
+            Reserved : Reserved;
+            Control_Bit : Control_Bit;
+            Window : Window;
+            Checksum : Checksum;
+            Option : Option;
+            Padding : Padding;
+        end message;
+
+end TCP;

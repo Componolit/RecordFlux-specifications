@@ -1,0 +1,122 @@
+package TCP is
+
+    -- RFC 675
+
+    type Type_Code is
+    (GENERAL   => 0,
+     OPEN      => 1,
+     CLOSE     => 2,
+     INTERRUPT => 3,
+     SEND      => 10,
+     RECEIVE   => 20,
+     STATUS    => 30)
+    with Size => 1;
+
+    type Internet_Information is
+    (PSN => )
+
+    type Header_Length is mod 2**3;
+    type Text_Length is mod 2**4;
+    type Packet_Seq_Number is mod 2**5;
+    type Ack_Number is mod 2**5;
+    type Window_Size is mod 2**4;
+
+    type CONTROL_DISPATCH is
+    (NULL                => 16#000#,
+     EVENT_CODE          => 16#001#,
+     SPECIAL_FUNCTION    => 16#010#,
+     REJECT              => 16#011#,
+     UNUSED              => )
+    with Size => 16;
+
+    type Control_Information is
+    (SYN => ,
+     ACK => ,
+     FIN => ,
+     DSN => ,
+     EOS => ,
+     EOL => ,
+     INT => ,
+     XXX => ,
+     OD  : CONTROL_DISPATCH)
+    with Size => 16;
+
+    type Control_Data is
+    (RESET => 0,
+     RESET => l,
+     ECHO  => 2,
+     QUERY => 3,
+     STATUS => 4,
+     ECHOR  => 5,
+     TRASH  => 6,
+     UNUSED => >6)
+    with Size =>
+
+    type Destination_Address_Length is mod 2**2;
+    type Destination_Address is mod 2**2;
+    type Destination_TCP is mod 2**4;
+    type Padding is mod 2**3;
+    type Source_Address_Length is mod 2**2;
+    type Source_Address is mod 2**2;
+    type Source_TCP is mod 2**4;
+    type Destination_Port is Size => 24;
+    type Source_Port is Size => 24 ;
+    type Checksum is mod 2**4;
+
+    type Local_Connection is mod 2**4;
+    type Local_Socket is range with Size => 48;
+    type Foreign_Socket is range with Size => 48;
+    type Receive_Window_Size is mod 2**4;
+    type Receive_Left_Window is mod 2**5;
+    type Receive_Packet_Buffer is mod 2**4;
+    type Send_Window_Size is mod 2**4;
+    type Send_Left_Window is mod 2**5;
+    type Next_Seq_Number is mod 2**5;
+    type Send_Packet_Buffer is mod 2**4;
+
+    type Connection_State is
+    (EC => 1,
+     SS);
+    type Special_Flags is ;
+    type Retransmission_Timeout is mod 2**4;
+    type Send_Buffer_Tail is mod 2**4;
+    type Pointer is mod 2**4;
+    type Send_Head is mod 2**4;
+    type Send_Tail is mod 2**4;
+    type Packetized_Bufffer_Head is mod 2**4;
+    type Packetized_Buffer_Tail is mod 2**4;
+    type Retransmit_Packet_Head is mod 2**4;
+    type Retransmit_Packet_Tail is mod 2**4;
+    type Receive_Buffer_Head is mod 2**4;
+    type Receive_Buffer_Tail is mod 2**4;
+    type Receive_Packet_Head is mod 2**4;
+    type Receive_Packet_Tail is mod 2**4;
+    type Last_Receive_Packet is mod 2**4; --Pointer
+    type Last_Octet_Filled_Buffer is mod 2**4; --Pointer
+    type Next_Read_Octet is mod 2**4; --Pointer
+    type Forward_TCB_Pointer is mod 2**4;
+    type Backward_TCB_Pointer is mod 2**4;
+
+    type Internetwork_Packet is
+        message
+           Internet_Information : Internet_Information;
+           Header_Length : Header_Length;
+           Text_Length : Text_Length;
+           Packet_Seq_Number : Packet_Seq_Number;
+           Ack_Number : Ack_Number;
+           Window_Size : Window_Size;
+           Control_Information : Control_Information;
+           Control_Data : ;
+           Destination_Address_Length : Destination_Address_Length;
+           Destination_Address : Destination_Address;
+           Destination_TCP : Destination_TCP;
+           Padding : Padding;
+           Source_Address_Length : Source_Address_Length;
+           Source_Address : Source_Address;
+           Source_TCP : Source_TCP;
+           Destination_Port : Destination_Port;
+           Source_Port : Source_Port;
+           Checksum : Checksum;
+        end message;
+
+end TCP;
