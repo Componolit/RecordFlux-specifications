@@ -1,0 +1,124 @@
+package SPDM is
+
+   -- Security Protocol and Data Model (SPDM) Specification
+   -- Document Identifier: DSP0274
+   -- Version: 1.1.0
+
+   -- ISSUE: Componolit/RecordFlux#601
+   -- [33] Unless otherwise specified, reserved numeric and bit fields shall be written as
+   --      zero (0) and ignored when read.
+
+   type Reserved_8 is range 0 .. 0 with Size => 8;
+
+   -- ISSUE: Componolit/RecordFlux#104
+   -- [35] Unless otherwise specified, for all SPDM specifications byte ordering of multi-byte
+   --      numeric fields or multi-byte bit fields is "Little Endian" (that is, the lowest byte
+   --      offset holds the least significant byte, and higher offsets hold the more significant
+   --      bytes).
+
+   -- 2.5.1 Version encoding
+
+   type Major_Version is range 1 .. 1 with Size => 4;
+   type Minor_Version is range 0 .. 0 with Size => 4;
+
+   -- 8.3 SPDM request codes
+
+   type Request_Code is
+      (Get_Digests                   => 16#81#,
+       Get_Certificate               => 16#82#,
+       Challenge                     => 16#83#,
+       Get_Version                   => 16#84#,
+       Get_Measurements              => 16#E0#,
+       Get_Capabilities              => 16#E1#,
+       Negotiate_Algorithms          => 16#E3#,
+       Key_Exchange                  => 16#E4#,
+       Finish                        => 16#E5#,
+       PSK_Exchange                  => 16#E6#,
+       PSK_Finish                    => 16#E7#,
+       Heartbeat                     => 16#E8#,
+       Key_Update                    => 16#E9#,
+       Get_Encapsulated_Request      => 16#EA#,
+       Deliver_Encapsulated_Response => 16#EB#,
+       End_Session                   => 16#EC#,
+       Respond_If_Ready              => 16#FF#,
+       Vendor_Defined_Request        => 16#FE#)
+   with Size => 8;
+
+   -- 8.4 SPDM response codes
+
+   type Response_Code is
+      (Digests                   => 16#01#,
+       Certificate               => 16#02#,
+       Challenge_Auth            => 16#03#,
+       Version                   => 16#04#,
+       Measurements              => 16#60#,
+       Capabilities              => 16#61#,
+       Algorithms                => 16#63#,
+       Key_Exchange_RSP          => 16#64#,
+       Finish_RSP                => 16#65#,
+       PSK_Exchange_RSP          => 16#66#,
+       PSK_Finish_RSP            => 16#67#,
+       Heartbeat_ACK             => 16#68#,
+       Key_Update_ACK            => 16#69#,
+       Encapsulated_Request      => 16#6A#,
+       Encapsulated_Response_ACK => 16#6B#,
+       End_Session_ACK           => 16#6C#,
+       Vendor_Defined_Response   => 16#7E#,
+       Error                     => 16#7F#)
+   with Size => 8;
+
+   -- 8.2 Generic SPDM message format
+
+   type Request is
+      message
+         Major_Version : Major_Version;
+         Minor_Version : Minor_Version;
+         Code : Request_Code;
+         Data : Opaque
+            with Size => Message'Size - (Code'Last - Major_Version'First + 1);
+      end message;
+
+   type Response is
+      message
+         Major_Version : Major_Version;
+         Minor_Version : Minor_Version;
+         Code : Response_Code;
+         Data : Opaque
+            with Size => Message'Size - (Code'Last - Major_Version'First + 1);
+      end message;
+
+   -- 10.7 GET_DIGESTS request and DIGESTS response messages
+
+   type Get_Digests_Request is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+      end message;
+
+   for Request use (Data => Get_Digests_Request)
+      if Code = Get_Digests;
+
+   type Digests_Response is
+      message
+         Param_1        : Reserved_8;
+         Slot_7_Present : Boolean;
+         Slot_6_Present : Boolean;
+         Slot_5_Present : Boolean;
+         Slot_4_Present : Boolean;
+         Slot_3_Present : Boolean;
+         Slot_2_Present : Boolean;
+         Slot_1_Present : Boolean;
+         Slot_0_Present : Boolean;
+         --  The message cannot be expressed:
+         --     1. The size of the digest list depends on prior negotiation
+         --        (cf. Componolit/systematization-binary-schemas#53)
+         --     2. We cannot express the presence of fields depending on the a bitfield
+         --        (cf. Componolit/systematization-binary-schemas#59)
+         Digests_Data : Opaque
+            with Size => Message'Size - (Slot_0_Present'Last - Param_1'First + 1);
+      end message;
+
+   for Response use (Data => Digests_Response)
+      if Code = Digests;
+
+end SPDM;
