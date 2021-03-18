@@ -1,0 +1,79 @@
+with TLS_Parameters;
+
+package DTLS13_Record is
+
+   type Protocol_Version is
+      (DTLS_1_0 => 16#FEFF#,
+       DTLS_1_2 => 16#FEFD#)
+   with Size => 16, Always_Valid;
+
+   type Epoch is mod 2**16;
+   type Sequence_Number is mod 2**24;
+   type Length is mod 2**16;
+
+   type DTLS_Plaintext is
+      message
+         Tag : TLS_Parameters::Content_Type;
+         Legacy_Record_Version : Protocol_Version;
+         Epoch : Epoch;
+         Sequence_Number : Sequence_Number;
+         Length : Length;
+         Fragment : Opaque
+            with Size => Length * 8;
+      end message;
+
+   --  ISSUE: Componolit/RecordFlux#90
+   type DTLS_Inner_Plaintext is
+      message
+         Tag : TLS_Parameters::Content_Type
+            then Content
+               with Size => Message'Size - 16
+               if Message'Size > 16;
+         Content : Opaque;
+      end message;
+
+   type Fixed_Bits is range 1 .. 1 with Size => 3;
+   type Epoch_Low_Bits is mod 2**2;
+   type Sequence_Number_8 is mod 2**8;
+   type Sequence_Number_16 is mod 2**16;
+
+   --  ISSUE: Componolit/RecordFlux#609
+   --  The length of the Connection ID is defined by prior negotiation.
+   type DTLS_Ciphertext is
+      message
+         Fixed_Bits : Fixed_Bits;
+         Connection_ID_Present : Boolean;
+         Long_Sequence_Number : Boolean;
+         Length_Present : Boolean;
+         Epoch : Epoch_Low_Bits
+            then Connection_ID
+               if Connection_ID_Present = True
+            then Sequence_Number_8
+               if Connection_ID_Present = False and Long_Sequence_Number = False
+            then Sequence_Number_16
+               if Connection_ID_Present = False and Long_Sequence_Number = True;
+         Connection_ID : Opaque
+            with Size => 0  --  length as negotiated
+            then Sequence_Number_8
+               if Long_Sequence_Number = False
+            then Sequence_Number_16
+               if Long_Sequence_Number = True;
+         Sequence_Number_8 : Sequence_Number_8
+            then Length
+               if Length_Present = True
+            then Encrypted_Record
+               with Size => Message'Last - Sequence_Number_8'Last + 1
+               if Length_Present = False;
+         Sequence_Number_16 : Sequence_Number_16
+            then Length
+               if Length_Present = True
+            then Encrypted_Record
+               with Size => Message'Last - Sequence_Number_16'Last + 1
+               if Length_Present = False;
+         Length : Length
+            then Encrypted_Record
+               with Size => Length * 8;
+         Encrypted_Record : Opaque;
+      end message;
+
+end DTLS13_Record;

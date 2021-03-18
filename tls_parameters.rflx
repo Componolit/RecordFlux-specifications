@@ -1,0 +1,14 @@
+--  https://www.iana.org/assignments/tls-parameters/tls-parameters.xml
+
+package TLS_Parameters is
+
+   type Content_Type is
+      (Invalid            =>  0,
+       Change_Cipher_Spec => 20,
+       Alert              => 21,
+       Handshake          => 22,
+       Application_Data   => 23,
+       Heartbeat          => 24)
+   with Size => 8;
+
+end TLS_Parameters;
