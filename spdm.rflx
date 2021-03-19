@@ -100,7 +100,7 @@ package SPDM is
 
    type Digests_Response is
       message
-         Param_1        : Reserved_8;
+         Param_1 : Reserved_8;
          Slot_7_Present : Boolean;
          Slot_6_Present : Boolean;
          Slot_5_Present : Boolean;
@@ -120,5 +120,39 @@ package SPDM is
 
    for Response use (Data => Digests_Response)
       if Code = Digests;
+
+   -- 10.8 GET_CERTIFICATE request and CERTIFICATE response messages
+
+   type Slot_Number is range 0 .. 7 with Size => 8;
+   type Offset is mod 2**16;
+   type Length is mod 2**16;
+
+   type Get_Certificate_Request is
+      message
+         Slot_Number : Slot_Number;
+         Param_2 : Reserved_8;
+         --  This property must be expressed in the session:
+         --     For the first GET_CERTIFICATE request, the Requester shall set this field to 0.
+         --     For non-first requests, Offset is the sum of PortionLength values in all previous
+         --     GET_CERTIFICATE responses.
+         Offset : Offset;
+         Length : Length;
+      end message;
+
+   for Request use (Data => Get_Certificate_Request)
+      if Code = Get_Certificate;
+
+   type Certificate_Response is
+      message
+         Slot_Number : Slot_Number;
+         Param_2 : Reserved_8;
+         Portion_Length : Length;
+         Remainder_Length : Length;
+         Cert_Chain : Opaque
+            with Size => 8 * Portion_Length;
+      end message;
+
+   for Response use (Data => Certificate_Response)
+      if Code = Certificate;
 
 end SPDM;
