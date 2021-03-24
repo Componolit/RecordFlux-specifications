@@ -4,10 +4,19 @@ package SPDM is
    -- Document Identifier: DSP0274
    -- Version: 1.1.0
 
+   -- We will define a static hash type Hash, even though this is acutally based on prior
+   -- negotiation. We will use Hash'Size throughout this spec to simulate that.
+   -- ISSUE: Componolit/systematization-binary-schemas#53
+   type Hash is mod 2**64;
+   type Signature is mod 2**64;
+
+   type Hashes is array of Hash;
+
    -- ISSUE: Componolit/RecordFlux#601
    -- [33] Unless otherwise specified, reserved numeric and bit fields shall be written as
    --      zero (0) and ignored when read.
 
+   type Reserved_3 is range 0 .. 0 with Size => 3;
    type Reserved_8 is range 0 .. 0 with Size => 8;
 
    -- ISSUE: Componolit/RecordFlux#104
@@ -87,6 +96,22 @@ package SPDM is
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
       end message;
 
+   --  Common types
+
+   type Slot_Present is range 0 .. 1 with Size => 1;
+
+   type Slot_Mask is
+      message
+         Slot_7_Present : Slot_Present;
+         Slot_6_Present : Slot_Present;
+         Slot_5_Present : Slot_Present;
+         Slot_4_Present : Slot_Present;
+         Slot_3_Present : Slot_Present;
+         Slot_2_Present : Slot_Present;
+         Slot_1_Present : Slot_Present;
+         Slot_0_Present : Slot_Present;
+      end message;
+
    -- 10.7 GET_DIGESTS request and DIGESTS response messages
 
    type Get_Digests_Request is
@@ -101,21 +126,17 @@ package SPDM is
    type Digests_Response is
       message
          Param_1 : Reserved_8;
-         Slot_7_Present : Boolean;
-         Slot_6_Present : Boolean;
-         Slot_5_Present : Boolean;
-         Slot_4_Present : Boolean;
-         Slot_3_Present : Boolean;
-         Slot_2_Present : Boolean;
-         Slot_1_Present : Boolean;
-         Slot_0_Present : Boolean;
-         --  The message cannot be expressed:
-         --     1. The size of the digest list depends on prior negotiation
-         --        (cf. Componolit/systematization-binary-schemas#53)
-         --     2. We cannot express the presence of fields depending on the a bitfield
-         --        (cf. Componolit/systematization-binary-schemas#59)
-         Digests_Data : Opaque
-            with Size => Message'Size - (Slot_0_Present'Last - Param_1'First + 1);
+         Slot_Mask : Slot_Mask;
+         Digests_Data : Hashes
+            --  FIXME: Hash'Size should work, but doesn't
+            with Size => 64 * (Slot_Mask_Slot_0_Present
+                               + Slot_Mask_Slot_1_Present
+                               + Slot_Mask_Slot_2_Present
+                               + Slot_Mask_Slot_3_Present
+                               + Slot_Mask_Slot_4_Present
+                               + Slot_Mask_Slot_5_Present
+                               + Slot_Mask_Slot_6_Present
+                               + Slot_Mask_Slot_7_Present);
       end message;
 
    for Response use (Data => Digests_Response)
@@ -123,13 +144,24 @@ package SPDM is
 
    -- 10.8 GET_CERTIFICATE request and CERTIFICATE response messages
 
-   type Slot_Number is range 0 .. 7 with Size => 8;
+   type Slot is
+      (Slot_0              => 16#00#,
+       Slot_1              => 16#01#,
+       Slot_2              => 16#02#,
+       Slot_3              => 16#03#,
+       Slot_4              => 16#04#,
+       Slot_5              => 16#05#,
+       Slot_6              => 16#06#,
+       Slot_7              => 16#07#,
+       Trusted_Environment => 16#FF#)
+   with Size => 8;
+
    type Offset is mod 2**16;
    type Length is mod 2**16;
 
    type Get_Certificate_Request is
       message
-         Slot_Number : Slot_Number;
+         Slot : Slot;
          Param_2 : Reserved_8;
          --  This property must be expressed in the session:
          --     For the first GET_CERTIFICATE request, the Requester shall set this field to 0.
@@ -144,7 +176,7 @@ package SPDM is
 
    type Certificate_Response is
       message
-         Slot_Number : Slot_Number;
+         Slot : Slot;
          Param_2 : Reserved_8;
          Portion_Length : Length;
          Remainder_Length : Length;
@@ -154,5 +186,63 @@ package SPDM is
 
    for Response use (Data => Certificate_Response)
       if Code = Certificate;
+
+   -- 10.9 CHALLENGE request and CHALLENGE_AUTH response messages
+
+   type Measurement_Summary_Hash_Type is
+      (No_Measurement   => 16#00#,
+       TCB_Measurement  => 16#01#,
+       All_Measurements => 16#FF#)
+   with Size => 8;
+
+   type Challenge_Request is
+      message
+         Slot : Slot;
+         Hash_Type : Measurement_Summary_Hash_Type;
+         Nonce : Opaque
+            with Size => 8 * 32;
+      end message;
+
+   for Request use (Data => Challenge_Request)
+      if Code = Challenge;
+
+   type Narrow_Slot is
+      (NS_0                   => 16#0#,
+       NS_1                   => 16#1#,
+       NS_2                   => 16#2#,
+       NS_3                   => 16#3#,
+       NS_4                   => 16#4#,
+       NS_5                   => 16#5#,
+       NS_6                   => 16#6#,
+       NS_7                   => 16#7#,
+       NS_Trusted_Environment => 16#F#)
+   with Size => 4;
+
+   type Challenge_Auth_Response is
+      message
+         Basic_Mut_Auth_Req : Boolean;
+         Reserved           : Reserved_3;
+         Slot               : Narrow_Slot;
+         Slot_Mask          : Slot_Mask;
+         Cert_Chain_Hash    : Hash;
+         Nonce : Opaque
+            with Size => 8 * 32;
+         --  ISSUE: Componolit/systematization-binary-schemas#53
+         --  This field shall
+         --    - not be present if Hash_Type of the request was No_Measurement or measurement is
+         --      unsupported
+         --    - contain a hash if Hash_Type was TCB_Measurement
+         --    - be 0 if Hash_Type was TCB_Measurement and no measurement is required
+         --    - contain a hash of all measurements if Hash_Type was All_Measurments
+         Opaque_Length : Length
+            then Opaque_Data
+               if Opaque_Length <= 1024;
+         Opaque_Data : Opaque
+            with Size => 8 * Opaque_Length;
+         Signature : Signature;
+      end message;
+
+   for Response use (Data => Challenge_Auth_Response)
+      if Code = Challenge_Auth;
 
 end SPDM;
