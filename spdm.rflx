@@ -27,8 +27,10 @@ package SPDM is
 
    -- 2.5.1 Version encoding
 
-   type Major_Version is range 1 .. 1 with Size => 4;
-   type Minor_Version is range 0 .. 0 with Size => 4;
+   type Major_Version is range 0 .. 2**4 - 1 with Size => 4;
+   type Minor_Version is range 0 .. 2**4 - 1 with Size => 4;
+   type Update_Version_Number is range 0 .. 2**4 - 1 with Size => 4;
+   type Alpha is range 0 .. 2**4 - 1 with Size => 4;
 
    -- 8.3 SPDM request codes
 
@@ -80,8 +82,12 @@ package SPDM is
 
    type Request is
       message
-         Major_Version : Major_Version;
-         Minor_Version : Minor_Version;
+         Major_Version : Major_Version
+            then Minor_Version
+               if Major_Version = 1;
+         Minor_Version : Minor_Version
+            then Code
+               if Minor_Version = 1;
          Code : Request_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
@@ -89,8 +95,12 @@ package SPDM is
 
    type Response is
       message
-         Major_Version : Major_Version;
-         Minor_Version : Minor_Version;
+         Major_Version : Major_Version
+            then Minor_Version
+               if Major_Version = 1;
+         Minor_Version : Minor_Version
+            then Code
+               if Minor_Version = 1;
          Code : Response_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
@@ -111,6 +121,47 @@ package SPDM is
          Slot_1_Present : Slot_Present;
          Slot_0_Present : Slot_Present;
       end message;
+
+   -- 10.2 GET_VERSION request and VERSION response messages
+
+   type Get_Version_Request is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+      end message;
+
+   for Request use (Data => Get_Version_Request)
+      if Code = Get_Version;
+
+   type Version_Number_Entry is
+      message
+         Major_Version : Major_Version;
+         Minor_Version : Minor_Version;
+         Update_Version_Number : Update_Version_Number;
+         Alpha : Alpha
+            --  Assume a released version
+            then null
+               if Alpha = 0;
+      end message;
+
+   type Version_Number_Entries is array of Version_Number_Entry;
+
+   type Version_Number_Entry_Count is range 1 .. 2**8 - 1 with Size => 8;
+
+   type Version_Response is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Reserved : Reserved_8;
+         Version_Number_Entry_Count : Version_Number_Entry_Count;
+         Version_Number_Entries : Version_Number_Entries
+            --  ISSUE: Componolit/RecordFlux#404
+            --  with Size => Version_Number_Entry_Count * Version_Number_Entry'Size;
+            with Size => Version_Number_Entry_Count * 8;
+      end message;
+
+   for Response use (Data => Version_Response)
+      if Code = Version;
 
    -- 10.7 GET_DIGESTS request and DIGESTS response messages
 
