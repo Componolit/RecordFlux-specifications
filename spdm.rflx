@@ -16,8 +16,12 @@ package SPDM is
    -- [33] Unless otherwise specified, reserved numeric and bit fields shall be written as
    --      zero (0) and ignored when read.
 
+   type Reserved_1 is range 0 .. 0 with Size => 1;
+   type Reserved_2 is range 0 .. 0 with Size => 2;
    type Reserved_3 is range 0 .. 0 with Size => 3;
    type Reserved_8 is range 0 .. 0 with Size => 8;
+   type Reserved_15 is range 0 .. 0 with Size => 15;
+   type Reserved_16 is range 0 .. 0 with Size => 16;
 
    -- ISSUE: Componolit/RecordFlux#104
    -- [35] Unless otherwise specified, for all SPDM specifications byte ordering of multi-byte
@@ -162,6 +166,125 @@ package SPDM is
 
    for Response use (Data => Version_Response)
       if Code = Version;
+
+   -- 10.3 GET_CAPABILITIES request and CAPABILITIES response messages
+
+   type CT_Exponent is range 0 .. 2**8 - 1 with Size => 8;
+   type PSK_Request_Cap is
+      (PSK_Req_Unsupported => 0,
+       PSK_Req_Supported   => 1)
+   with Size => 2;
+
+   type Get_Capabilities_Request is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Reserved_1 : Reserved_8;
+         CT_Exponent : CT_Exponent;
+         Reserved_2 : Reserved_16;
+         Reserved_3 : Reserved_1;
+         Cert_Cap : Boolean;
+         Chal_Cap : Boolean;
+         Unused_Meas_Cap : Reserved_2;
+         Unused_Meas_Fresh_Cap : Reserved_1;
+         Encrypt_Cap : Boolean;
+         MAC_Cap : Boolean;
+         Mut_Auth_Cap : Boolean;
+         Key_Ex_Cap : Boolean;
+         PSK_Cap : PSK_Request_Cap;
+         Encap_Cap : Boolean;
+         H_Beat_Cap : Boolean;
+         Key_Upd_Cap : Boolean;
+         Handshake_In_The_Clear_Cap : Boolean;
+         Pub_Key_ID_Cap : Boolean;
+         Reserved_4 : Reserved_15
+            then null
+               if --  Encrypt_Cap:
+                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  accordingly to indicate support.
+                  (Encrypt_Cap = False or PSK_Cap = PSK_Req_Supported or Key_Ex_Cap = True)
+                  --  MAC_Cap:
+                  --  If set, Requester supports message authentication. If set, one or more of
+                  --  PSK_CAP or KEY_EX_CAP fields shall be specified accordingly to indicate
+                  --  support.
+                  and (MAC_Cap = False or PSK_Cap = PSK_Req_Supported or Key_Ex_Cap = True)
+                  --  Key_Ex_Cap:
+                  --  If set, Requester supports KEY_EXCHANGE messages. If set, one or more of
+                  --  ENCRYPT_CAP and MAC_CAP shall be set.
+                  and (Key_Ex_Cap = False or (Encrypt_Cap = True or MAC_Cap = True))
+                  --  If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  and (PSK_Cap /= PSK_Req_Supported or (Encrypt_Cap = True or MAC_Cap = True))
+                  --  ENCAP_CAP:
+                  --  If mutual authentication is supported, this field shall be set.
+                  and (Mut_Auth_Cap = False or Encap_Cap = True)
+                  --  HANDSHAKE_IN_THE_CLEAR_CAP
+                  --  If set, KEY_EX_CAP shall also be set.
+                  and (Handshake_In_The_Clear_Cap = False or Key_Ex_Cap = True)
+                  --  HANDSHAKE_IN_THE_CLEAR_CAP
+                  --  If the Requester does not support encryption and message authentication, then
+                  --  this bit shall be zero.
+                  and (Encrypt_Cap = True or Mac_Cap = True or Handshake_In_The_Clear_Cap = False);
+      end message;
+
+   for Request use (Data => Get_Capabilities_Request)
+      if Code = Get_Capabilities;
+
+   type Meas_Cap is
+      (Meas_Supported => 0,
+       Meas_Play      => 1,
+       Meas_Signed    => 2)
+   with Size => 2;
+
+   type PSK_Resp_Cap is
+      (PSK_Resp_Unsupported     => 0,
+       PSK_Resp_Without_Context => 1,
+       PSK_Resp_With_Context    => 2)
+   with Size => 2;
+
+   type Capabilities_Response is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Reserved_1 : Reserved_8;
+         CT_Exponent : CT_Exponent;
+         Reserved_2 : Reserved_16;
+         Cache_Cap : Boolean;
+         Cert_Cap : Boolean;
+         Chal_Cap : Boolean;
+         Meas_Cap : Meas_Cap;
+         Meas_Fresh_Cap : Boolean;
+         Encrypt_Cap : Boolean;
+         MAC_Cap : Boolean;
+         Mut_Auth_Cap : Boolean;
+         Key_Ex_Cap : Boolean;
+         PSK_Cap : PSK_Resp_Cap;
+         Encap_Cap : Boolean;
+         H_Beat_Cap : Boolean;
+         Key_Upd_Cap : Boolean;
+         Handshake_In_The_Clear_Cap : Boolean;
+         Pub_Key_ID_Cap : Boolean;
+         Reserved_4 : Reserved_15
+            then null
+               if --  Encrypt_Cap:
+                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  accordingly to indicate support.
+                  (Encrypt_Cap = False or PSK_Cap /= PSK_Resp_Unsupported or Key_Ex_Cap = True)
+                  --  MAC_Cap:
+                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  accordingly to indicate support.
+                  and (MAC_Cap = False or PSK_Cap /= PSK_Resp_Unsupported or Key_Ex_Cap = True)
+                  --  Key_Ex_Cap:
+                  --  If set, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  and (Key_Ex_Cap = False or (Encrypt_Cap = True or MAC_Cap = True))
+                  --  If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  and (PSK_Cap = PSK_Resp_Unsupported or (Encrypt_Cap = True or MAC_Cap = True))
+                  --  ENCAP_CAP:
+                  --  If mutual authentication is supported, this field shall be set.
+                  and (Mut_Auth_Cap = False or Encap_Cap = True);
+      end message;
+
+   for Response use (Data => Capabilities_Response)
+      if Code = Capabilities;
 
    -- 10.7 GET_DIGESTS request and DIGESTS response messages
 
