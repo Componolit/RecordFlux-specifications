@@ -12,6 +12,11 @@ package SPDM is
 
    type Hashes is array of Hash;
 
+   -- Base types
+
+   type Length is mod 2**16;
+   type Index is range 1 .. 2**8 - 1 with Size => 8;
+
    -- ISSUE: Componolit/RecordFlux#601
    -- [33] Unless otherwise specified, reserved numeric and bit fields shall be written as
    --      zero (0) and ignored when read.
@@ -19,9 +24,14 @@ package SPDM is
    type Reserved_1 is range 0 .. 0 with Size => 1;
    type Reserved_2 is range 0 .. 0 with Size => 2;
    type Reserved_3 is range 0 .. 0 with Size => 3;
+   type Reserved_5 is range 0 .. 0 with Size => 5;
+   type Reserved_7 is range 0 .. 0 with Size => 7;
    type Reserved_8 is range 0 .. 0 with Size => 8;
    type Reserved_15 is range 0 .. 0 with Size => 15;
    type Reserved_16 is range 0 .. 0 with Size => 16;
+   type Reserved_24 is range 0 .. 0 with Size => 24;
+   type Reserved_32 is range 0 .. 0 with Size => 32;
+   type Reserved_64 is range 0 .. 0 with Size => 64;
 
    -- ISSUE: Componolit/RecordFlux#104
    -- [35] Unless otherwise specified, for all SPDM specifications byte ordering of multi-byte
@@ -286,6 +296,283 @@ package SPDM is
    for Response use (Data => Capabilities_Response)
       if Code = Capabilities;
 
+   -- 10.11 Measurement block
+
+   type Measurement_Specification is
+      (DMTF => 0)
+   with Size => 8;
+
+   type DMTF_Spec_Measurement_Value_Representation is
+      (Digest         => 0,
+       Raw_Bit_Stream => 1)
+   with Size => 1;
+
+   type DMTF_Spec_Measurement_Value_Type is
+      (Immutable_ROM          => 0,
+       Mutable_Firmware       => 1,
+       Hardware_Configuration => 2,
+       Firmware_Configuration => 3,
+       Measured_Manifest      => 4)
+   with Size => 7;
+
+   type Measurment_Block is
+      message
+         Index : Index;
+         Measurement_Specification : Measurement_Specification;
+         Measurement_Size : Length
+            then DMTF_Spec_Measurement_Value_Representation
+               if Measurement_Specification = DMTF;
+         DMTF_Spec_Measurement_Value_Representation : DMTF_Spec_Measurement_Value_Representation;
+         DMTF_Spec_Measurement_Value_Type : DMTF_Spec_Measurement_Value_Type;
+         --  [335] When DMTFSpecMeasurementValueType[7]=0b, the DMTFSpecMeasurementValueSize shall
+         --  be derived from the measurement hash algorithm that the ALGORITHM response message
+         --  returns.
+         --  FIXME: What does "shall be derived" mean - equals the hash length?
+         DMTF_Spec_Measurement_Value_Size : Length;
+         DMTF_Spec_Measurement_Value : Opaque
+            with Size => 8 * DMTF_Spec_Measurement_Value_Size
+            then null
+               if Measurement_Size = 8 * (DMTF_Spec_Measurement_Value'Last - Measurement_Size'Last);
+      end message;
+
+   -- [201] Extended Algorithm field format
+
+   type Registry_ID is
+      (Reg_DMTF      => 0,
+       Reg_TCG       => 1,
+       Reg_USB       => 2,
+       Reg_PCI_SIG   => 3,
+       Reg_IANA      => 4,
+       Reg_HD_Base_T => 5,
+       Reg_MIPI      => 6,
+       Reg_CXL       => 7,
+       Reg_JEDEC     => 8)
+   with Size => 8;
+
+   type Algorithm_ID_16 is mod 2**16;
+   type Algorithm_ID_32 is mod 2**16;
+
+   type Ext_Alg is
+      message
+         Registry_ID : Registry_ID;
+         Reserved : Reserved_8
+            then null
+               if Registry_ID = Reg_DMTF
+            then Algorithm_ID_16
+               if Registry_ID = Reg_TCG
+                  or Registry_ID = Reg_USB
+                  or Registry_ID = Reg_PCI_SIG
+                  or Registry_ID = Reg_MIPI
+                  or Registry_ID = Reg_CXL
+                  or Registry_ID = Reg_JEDEC
+            then Algorithm_ID_32
+               if Registry_ID = Reg_IANA
+                  or Registry_ID = Reg_HD_Base_T;
+         Algorithm_ID_16 : Algorithm_ID_16
+            then null;
+         Algorithm_ID_32 : Algorithm_ID_32;
+      end message;
+
+   type Ext_Algs is array of Ext_Alg;
+
+   -- [187] Algorithm request structure
+
+   type Alg_Type is
+      (DHE               => 2,
+       AEAD_Cipher_Suite => 3,
+       Req_Base_Asym_Alg => 4,
+       Key_Schedule      => 5)
+   with Size => 8;
+
+   type Alg_Count is range 0 .. 2**4 - 1 with Size => 4;
+
+   type Alg_Struct is
+      message
+         Alg_Type : Alg_Type;
+         Fixed_Alg_Count : Alg_Count
+            then Ext_Alg_Count
+               if Fixed_Alg_Count = 2;
+         Ext_Alg_Count : Alg_Count
+            then DHE_Reserved_1
+               if Alg_Type = DHE
+            then AEAD_Reserved_1
+               if Alg_Type = AEAD_Cipher_Suite
+            then RBAA_Reserved_1
+               if Alg_Type = Req_Base_Asym_Alg
+            then KS_Reserved_1
+               if Alg_Type = Key_Schedule;
+         DHE_Reserved_1 : Reserved_8;
+         DHE_Reserved_2 : Reserved_2;
+         DHE_SecP521r1 : Boolean;
+         DHE_SecP384r1 : Boolean;
+         DHE_SecP256r1 : Boolean;
+         DHE_FFDHE4096 : Boolean;
+         DHE_FFDHE3072 : Boolean;
+         DHE_FFDHE2048 : Boolean
+            then Alg_External;
+         AEAD_Reserved_1 : Reserved_8;
+         AEAD_Reserved_2 : Reserved_5;
+         AEAD_ChaCha20_Poly1305 : Boolean;
+         AEAD_AES_256_GCM : Boolean;
+         AEAD_AES_128_GCM : Boolean
+            then Alg_External;
+         RBAA_Reserved_1 : Reserved_7;
+         RBAA_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
+         RBAA_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
+         RBAA_TPM_ALG_RSAPSS_4096 : Boolean;
+         RBAA_TPM_ALG_RSASSA_4096 : Boolean;
+         RBAA_TPM_ALG_ECDSA_ECC_NIST_P256 : Boolean;
+         RBAA_TPM_ALG_RSAPSS_3072 : Boolean;
+         RBAA_TPM_ALG_RSASSA_3072 : Boolean;
+         RBAA_TPM_ALG_RSAPSS_2048 : Boolean;
+         RBAA_TPM_ALG_RSASSA_2048 : Boolean
+            then Alg_External;
+         KS_Reserved_1 : Reserved_8;
+         KS_Reserved_2 : Reserved_7;
+         KS_SPDM : Boolean
+            then Alg_External;
+         Alg_External : Ext_Algs
+            with Size => 32 * Ext_Alg_Count;
+      end message;
+
+   type Req_Alg_Structs is array of Alg_Struct;
+
+   -- 10.4 NEGOTIATE_ALGORITHMS request and ALGORITHMS response messages
+
+   type Alg_Struct_Count is range 0 .. 2**8 - 1 with Size => 8;
+   type Ext_Asym_Count is range 0 .. 2**8 - 1 with Size => 8;
+   type Ext_Hash_Count is range 0 .. 2**8 - 1 with Size => 8;
+
+   type Negotiate_Algorithms_Request is
+      message
+         Req_Alg_Struct_Count : Alg_Struct_Count;
+         Param_2 : Reserved_8;
+         Length : Length
+            then Measurement_Specification_Reserved
+               if Length <= 128;
+         Measurement_Specification_Reserved : Reserved_7;
+         Measurement_Specification_DMTF : Boolean;
+         Reserved_1 : Reserved_8;
+         Base_Asym_Algo_Reserved_1 : Reserved_16;
+         Base_Asym_Algo_Reserved_2 : Reserved_7;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_4096 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_4096 : Boolean;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P256 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_3072 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_3072 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_2048 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_2048 : Boolean;
+         Base_Hash_Algo_Reserved_1 : Reserved_24;
+         Base_Hash_Algo_Reserved_2 : Reserved_2;
+         Base_Hash_Algo_TPM_ALG_SHA3_512 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA3_384 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA3_256 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_512 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_384 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_256 : Boolean;
+         Reserved_2 : Reserved_64;
+         Reserved_3 : Reserved_32;
+         Ext_Asym_Count : Ext_Asym_Count;
+         Ext_Hash_Count : Ext_Hash_Count;
+         Reserved_4 : Reserved_16;
+         Ext_Asym : Ext_Algs
+            with Size => 32 * Ext_Asym_Count;
+         Ext_Hash : Ext_Algs
+            with Size => 32 * Ext_Hash_Count
+            then Req_Alg_Structs
+               --  Length is the total length of the message, we have to subtract the common header
+               --  of Request.
+               with Size => 8 * Length - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
+                  if 8 * Length >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
+         Req_Alg_Structs : Req_Alg_Structs;
+         -- ISSUE: Componolit/systematization-binary-schemas#8
+         -- The number of elements should also match Req_Alg_Struct_Count
+      end message;
+
+   for Request use (Data => Negotiate_Algorithms_Request)
+      if Code = Negotiate_Algorithms;
+
+   type Resp_Alg_Structs is array of Alg_Struct;
+
+   --  ISSUE: Componolit/RecordFlux#104
+   --  This should be little endian
+   type Measurement_Hash_Algo is
+      (Raw_Bit_Streams_Only =>  0,
+       MH_TPM_ALG_SHA_256   =>  1,
+       MH_TPM_ALG_SHA_384   =>  2,
+       MH_TPM_ALG_SHA_512   =>  4,
+       MH_TPM_ALG_SHA3_256  =>  8,
+       MH_TPM_ALG_SHA3_384  => 16,
+       MH_TPM_ALG_SHA3_512  => 32)
+   with Size => 64;
+
+   --  ISSUE: Componolit/RecordFlux#104
+   --  This should be little endian
+   type Base_Asym_Sel is
+      (BA_Unsupported                 =>   0,
+       BA_TPM_ALG_RSASSA_2048         =>   1,
+       BA_TPM_ALG_RSAPSS_2048         =>   2,
+       BA_TPM_ALG_RSASSA_3072         =>   4,
+       BA_TPM_ALG_RSAPSS_3072         =>   8,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P256 =>  16,
+       BA_TPM_ALG_RSASSA_4096         =>  32,
+       BA_TPM_ALG_RSAPSS_4096         =>  64,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P384 => 128,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P521 => 256)
+   with Size => 64;
+
+   --  ISSUE: Componolit/RecordFlux#104
+   --  This should be little endian
+   type Base_Hash_Sel is
+      (BH_Unsupported      =>  0,
+       BH_TPM_ALG_SHA_256  =>  1,
+       BH_TPM_ALG_SHA_384  =>  2,
+       BH_TPM_ALG_SHA_512  =>  4,
+       BH_TPM_ALG_SHA3_256 =>  8,
+       BH_TPM_ALG_SHA3_384 => 16,
+       BH_TPM_ALG_SHA3_512 => 32)
+   with Size => 64;
+
+   type Algorithms_Response is
+      message
+         Resp_Alg_Struct_Count : Alg_Struct_Count;
+         Param_2 : Reserved_8;
+         Length : Length
+            then Measurement_Specification_Sel
+               if Length <= 128;
+         Measurement_Specification_Sel: Measurement_Specification;
+         Reserved_1 : Reserved_8;
+         Measurement_Hash_Algo : Measurement_Hash_Algo;
+         Base_Asym_Sel : Base_Asym_Sel;
+         Base_Hash_Sel : Base_Hash_Sel;
+         Reserved_2 : Reserved_64;
+         Reserved_3 : Reserved_32;
+         Ext_Asym_Count : Ext_Asym_Count
+            then Ext_Hash_Count
+               if Ext_Asym_Count <= 1;
+         Ext_Hash_Count : Ext_Hash_Count
+            then Reserved_4
+               if Ext_Hash_Count <= 1;
+         Reserved_4 : Reserved_16;
+         Ext_Asym : Ext_Algs
+            with Size => 32 * Ext_Asym_Count;
+         Ext_Hash : Ext_Algs
+            with Size => 32 * Ext_Hash_Count
+            then Resp_Alg_Structs
+               --  Length is the total length of the message, we have to subtract the common header
+               --  of Request.
+               with Size => 8 * Length - 16 - (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1)
+                  if 8 * Length >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
+         Resp_Alg_Structs : Resp_Alg_Structs;
+         -- ISSUE: Componolit/systematization-binary-schemas#8
+         -- The number of elements should also match Resp_Alg_Struct_Count
+      end message;
+
+   for Response use (Data => Algorithms_Response)
+      if Code = Algorithms;
+
    -- 10.7 GET_DIGESTS request and DIGESTS response messages
 
    type Get_Digests_Request is
@@ -331,7 +618,6 @@ package SPDM is
    with Size => 8;
 
    type Offset is mod 2**16;
-   type Length is mod 2**16;
 
    type Get_Certificate_Request is
       message
