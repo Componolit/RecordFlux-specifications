@@ -787,4 +787,46 @@ package SPDM is
    for Response use (Data => Key_Exchange_Response)
       if Code = Key_Exchange_RSP;
 
+   --  10.17 FINISH request and FINISH_RSP response messages
+
+   type Finish_Request is
+      message
+         Reserved : Reserved_7;
+         Signature_Included : Boolean;
+         Slot : Slot
+            then Signature
+               if Signature_Included = True
+            then Requester_Verify_Data
+               if Signature_Included = False;
+         Signature : Opaque
+            -- ISSUE: Componolit/RecordFlux#609
+            -- Size of Signature is determined by the algorithm selected in previous
+            -- ALGORITHMS message
+            with Size => 8 * 42;
+         Requester_Verify_Data : Opaque
+            -- ISSUE: Componolit/RecordFlux#609
+            -- Size of Requester_Verify_Data is determined by the algorithm selected in previous
+            -- ALGORITHMS message
+            with Size => 8 * 42;
+      end message;
+
+   for Request use (Data => Finish_Request)
+      if Code = Finish;
+
+   type Finish_Response is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Responder_Verify_Data : Opaque
+            -- ISSUE: Componolit/RecordFlux#609
+            -- Presence of Responder_Verify_Data is determined by the Handshake_In_The_Clear_Cap
+            -- flage in the previous capabilities request
+            -- Size of Responder_Verify_Data is determined by the algorithm selected
+            -- in previous ALGORITHMS message
+            with Size => 8 * 42;
+      end message;
+
+   for Response use (Data => Finish_Response)
+      if Code = Finish_RSP;
+
 end SPDM;
