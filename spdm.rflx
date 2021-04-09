@@ -49,6 +49,8 @@ package SPDM is
 
    -- 8.3 SPDM request codes
 
+   type Request_Response_Code is mod 2**8;
+
    type Request_Code is
       (Get_Digests                   => 16#81#,
        Get_Certificate               => 16#82#,
@@ -706,9 +708,122 @@ package SPDM is
    for Response use (Data => Challenge_Auth_Response)
       if Code = Challenge_Auth;
 
-   -- 10.16 KEY_EXCHANGE request and KEY_EXCHANGE_RSP response messages
+   -- 10.12 ERROR response message
+
+   type Error_Code is
+      (Invalid_Request        => 16#01#,
+       Invalid_Session        => 16#02#,
+       Busy                   => 16#03#,
+       Unexpected_Request     => 16#04#,
+       Unspecified            => 16#05#,
+       Decrypt_Error          => 16#06#,
+       Unsupported_Request    => 16#07#,
+       Request_In_Flight      => 16#08#,
+       Invalid_Response_Code  => 16#09#,
+       Session_Limit_Exceeded => 16#0A#,
+       Major_Version_Mismatch => 16#41#,
+       Response_Not_Ready     => 16#42#,
+       Request_Resynch        => 16#43#,
+       Vendor                 => 16#FF#)
+   with Size => 16;
 
    type Session_ID is mod 2**16;
+
+   type RDT_Exponent is mod 2**8;
+   type Token is mod 2**8;
+   type RDTM is range 1 .. 2**8 - 1 with Size => 8;
+
+   type Response_Not_Ready_Data is
+      message
+         RDT_Exponent : RDT_Exponent;
+         Request_Code : Request_Code;
+         Token        : Token;
+         RDTM         : RDTM;
+      end message;
+
+   type Zero_Error_Data is range 0 .. 0 with Size => 8;
+
+   type Vendor_ID_Len is mod 2**8;
+   type Vendor_ID_Double is mod 2**16;
+   type Vendor_ID_Quad is mod 2**32;
+
+   type Error_Response is
+      message
+         Error_Code : Error_Code
+            then Invalid_Session_ID
+               if Error_Code = Invalid_Session
+            then Zero_Error_Data
+               if Error_Code = Invalid_Request
+                  or Error_Code = Busy
+                  or Error_Code = Unexpected_Request
+                  or Error_Code = Unspecified
+                  or Error_Code = Major_Version_Mismatch
+                  or Error_Code = Response_Not_Ready
+                  or Error_Code = Request_Resynch
+            then Reserved_Error_Data
+               if Error_Code = Decrypt_Error
+                  or Error_Code = Request_In_Flight
+                  or Error_Code = Invalid_Response_Code
+                  or Error_Code = Session_Limit_Exceeded
+            then Request_Response_Code
+               if Error_Code = Unsupported_Request
+            then Registry_ID
+               if Error_Code = Vendor;
+         Invalid_Session_ID : Session_ID
+            then null;
+         Zero_Error_Data : Zero_Error_Data
+            then Response_Not_Ready_Data
+               if Error_Code = Response_Not_Ready
+            then null
+               if Error_Code /= Response_Not_Ready;
+         Reserved_Error_Data : Reserved_8
+            then null;
+         Response_Not_Ready_Data : Response_Not_Ready_Data
+            then null;
+         Request_Response_Code : Request_Response_Code
+            then null;
+         Registry_ID : Registry_ID;
+         Vendor_ID_Len : Vendor_ID_Len
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Len'Last - Error_Code'First + 1)
+                  if Vendor_ID_Len = 0
+                     and Registry_ID = Reg_DMTF
+            then Vendor_ID_Double
+               if Vendor_ID_Len = 2
+                  and (Registry_ID = Reg_TCG
+                       or Registry_ID = Reg_USB
+                       or Registry_ID = Reg_PCI_SIG
+                       or Registry_ID = Reg_MIPI
+                       or Registry_ID = Reg_CXL
+                       or Registry_ID = Reg_JEDEC)
+            then Vendor_ID_Quad
+               if Vendor_ID_Len = 4
+                  and (Registry_ID = Reg_IANA
+                       or Registry_ID = Reg_HD_Base_T);
+         Vendor_ID_Double : Vendor_ID_Double
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Double'Last - Error_Code'First + 1);
+         Vendor_ID_Quad : Vendor_ID_Quad
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Quad'Last - Error_Code'First + 1);
+         Opaque_Error_Data : Opaque;
+      end message;
+
+   for Response use (Data => Error_Response)
+      if Code = Error;
+
+   -- 10.13 RESPOND_IF_READY request message format
+
+   type Respond_If_Ready_Request is
+      message
+         Original_Request_Code : Request_Code;
+         Token : Token;
+      end message;
+
+   for Request use (Data => Respond_If_Ready_Request)
+      if Code = Respond_If_Ready;
+
+   -- 10.16 KEY_EXCHANGE request and KEY_EXCHANGE_RSP response messages
 
    type Key_Exchange_Request is
       message
