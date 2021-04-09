@@ -829,4 +829,25 @@ package SPDM is
    for Response use (Data => Finish_Response)
       if Code = Finish_RSP;
 
+   --  10.24 END_SESSION request and END_SESSION_ACK response messages
+
+   type End_Session_Request is
+      message
+         Reserved_1 : Reserved_7;
+         Clear_Negotiated_State : Boolean;
+         Reserved_2 : Reserved_8;
+      end message;
+
+   for Request use (Data => End_Session_Request)
+      if Code = End_Session;
+
+   type End_Session_Response is
+      message
+         Reserved_1 : Reserved_8;
+         Reserved_2 : Reserved_8;
+      end message;
+
+   for Response use (Data => End_Session_Response)
+      if Code = End_Session_ACK;
+
 end SPDM;
