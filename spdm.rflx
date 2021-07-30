@@ -10,7 +10,7 @@ package SPDM is
    type Hash is mod 2**64;
    type Signature is mod 2**64;
 
-   type Hashes is array of Hash;
+   type Hashes is sequence of Hash;
 
    -- Base types
 
@@ -161,7 +161,7 @@ package SPDM is
                if Alpha = 0;
       end message;
 
-   type Version_Number_Entries is array of Version_Number_Entry;
+   type Version_Number_Entries is sequence of Version_Number_Entry;
 
    type Version_Number_Entry_Count is range 1 .. 2**8 - 1 with Size => 8;
 
@@ -376,7 +376,7 @@ package SPDM is
          Algorithm_ID_32 : Algorithm_ID_32;
       end message;
 
-   type Ext_Algs is array of Ext_Alg;
+   type Ext_Algs is sequence of Ext_Alg;
 
    -- [187] Algorithm request structure
 
@@ -438,7 +438,7 @@ package SPDM is
             with Size => 32 * Ext_Alg_Count;
       end message;
 
-   type Req_Alg_Structs is array of Alg_Struct;
+   type Req_Alg_Structs is sequence of Alg_Struct;
 
    -- 10.4 NEGOTIATE_ALGORITHMS request and ALGORITHMS response messages
 
@@ -497,7 +497,7 @@ package SPDM is
    for Request use (Data => Negotiate_Algorithms_Request)
       if Code = Negotiate_Algorithms;
 
-   type Resp_Alg_Structs is array of Alg_Struct;
+   type Resp_Alg_Structs is sequence of Alg_Struct;
 
    --  ISSUE: Componolit/RecordFlux#104
    --  This should be little endian
