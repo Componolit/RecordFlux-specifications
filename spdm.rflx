@@ -104,7 +104,7 @@ package SPDM is
                if Major_Version = 1;
          Minor_Version : Minor_Version
             then Code
-               if Minor_Version = 1;
+               if Minor_Version = 1 or Minor_Version = 0;
          Code : Request_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
@@ -117,7 +117,7 @@ package SPDM is
                if Major_Version = 1;
          Minor_Version : Minor_Version
             then Code
-               if Minor_Version = 1;
+               if Minor_Version = 1 or Minor_Version = 0;
          Code : Response_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
