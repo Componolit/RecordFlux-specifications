@@ -188,7 +188,13 @@ package SPDM is
        PSK_Req_Supported   => 1)
    with Size => 2;
 
-   type Get_Capabilities_Request is
+   type Get_Capabilities_Request_1_0 is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+      end message;
+
+   type Get_Capabilities_Request_1_1 is
       message
          Param_1 : Reserved_8;
          Param_2 : Reserved_8;
@@ -239,8 +245,11 @@ package SPDM is
                   and (Encrypt_Cap = True or Mac_Cap = True or Handshake_In_The_Clear_Cap = False);
       end message;
 
-   for Request use (Data => Get_Capabilities_Request)
-      if Code = Get_Capabilities;
+   for Request use (Data => Get_Capabilities_Request_1_0)
+      if Code = Get_Capabilities and Minor_Version = 0;
+
+   for Request use (Data => Get_Capabilities_Request_1_1)
+      if Code = Get_Capabilities and Minor_Version = 1;
 
    type Meas_Cap is
       (Meas_Supported => 0,
@@ -254,7 +263,25 @@ package SPDM is
        PSK_Resp_With_Context    => 2)
    with Size => 2;
 
-   type Capabilities_Response is
+   type Capabilities_Response_1_0 is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Reserved_1 : Reserved_8;
+         CT_Exponent : CT_Exponent;
+         Reserved_2 : Reserved_16;
+         Cache_Cap : Boolean;
+         Cert_Cap : Boolean;
+         Chal_Cap : Boolean;
+         Meas_Cap : Meas_Cap;
+         Meas_Fresh_Cap : Boolean;
+         Reserved_3 : Reserved_2;
+         Reserved_4 : Reserved_8;
+         Reserved_5 : Reserved_8;
+         Reserved_6 : Reserved_8;
+      end message;
+
+   type Capabilities_Response_1_1 is
       message
          Param_1 : Reserved_8;
          Param_2 : Reserved_8;
@@ -296,8 +323,11 @@ package SPDM is
                   and (Mut_Auth_Cap = False or Encap_Cap = True);
       end message;
 
-   for Response use (Data => Capabilities_Response)
-      if Code = Capabilities;
+   for Response use (Data => Capabilities_Response_1_0)
+      if Code = Capabilities and Minor_Version = 0;
+
+   for Response use (Data => Capabilities_Response_1_1)
+      if Code = Capabilities and Minor_Version = 1;
 
    -- 10.11 Measurement block
 
@@ -446,7 +476,47 @@ package SPDM is
    type Ext_Asym_Count is range 0 .. 2**8 - 1 with Size => 8;
    type Ext_Hash_Count is range 0 .. 2**8 - 1 with Size => 8;
 
-   type Negotiate_Algorithms_Request is
+   type Negotiate_Algorithms_Request_1_0 is
+      message
+         Param_1 : Reserved_8;
+         Param_2 : Reserved_8;
+         Length : Length
+            then Measurement_Specification_Reserved
+               if Length <= 64;
+         Measurement_Specification_Reserved : Reserved_7;
+         Measurement_Specification_DMTF : Boolean;
+         Reserved_1 : Reserved_8;
+         Base_Asym_Algo_Reserved_1 : Reserved_16;
+         Base_Asym_Algo_Reserved_2 : Reserved_7;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_4096 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_4096 : Boolean;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P256 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_3072 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_3072 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSAPSS_2048 : Boolean;
+         Base_Asym_Algo_TPM_ALG_RSASSA_2048 : Boolean;
+         Base_Hash_Algo_Reserved_1 : Reserved_24;
+         Base_Hash_Algo_Reserved_2 : Reserved_2;
+         Base_Hash_Algo_TPM_ALG_SHA3_512 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA3_384 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA3_256 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_512 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_384 : Boolean;
+         Base_Hash_Algo_TPM_ALG_SHA_256 : Boolean;
+         Reserved_2 : Reserved_64;
+         Reserved_3 : Reserved_32;
+         Ext_Asym_Count : Ext_Asym_Count;
+         Ext_Hash_Count : Ext_Hash_Count;
+         Reserved_4 : Reserved_16;
+         Ext_Asym : Ext_Algs
+            with Size => 32 * Ext_Asym_Count;
+         Ext_Hash : Ext_Algs
+            with Size => 32 * Ext_Hash_Count;
+      end message;
+
+   type Negotiate_Algorithms_Request_1_1 is
       message
          Req_Alg_Struct_Count : Alg_Struct_Count;
          Param_2 : Reserved_8;
@@ -494,8 +564,11 @@ package SPDM is
          -- The number of elements should also match Req_Alg_Struct_Count
       end message;
 
-   for Request use (Data => Negotiate_Algorithms_Request)
-      if Code = Negotiate_Algorithms;
+   for Request use (Data => Negotiate_Algorithms_Request_1_0)
+      if Code = Negotiate_Algorithms and Minor_Version = 0;
+
+   for Request use (Data => Negotiate_Algorithms_Request_1_1)
+      if Code = Negotiate_Algorithms and Minor_Version = 1;
 
    type Resp_Alg_Structs is sequence of Alg_Struct;
 
@@ -637,7 +710,12 @@ package SPDM is
    for Request use (Data => Get_Certificate_Request)
       if Code = Get_Certificate;
 
-   type Certificate_Response is
+   type Certificate_Response_1_0 is
+      message
+         Slot : Slot;
+      end message;
+
+   type Certificate_Response_1_1 is
       message
          Slot : Slot;
          Param_2 : Reserved_8;
@@ -647,8 +725,11 @@ package SPDM is
             with Size => 8 * Portion_Length;
       end message;
 
-   for Response use (Data => Certificate_Response)
-      if Code = Certificate;
+   for Response use (Data => Certificate_Response_1_0)
+      if Code = Certificate and Minor_Version = 0;
+
+   for Response use (Data => Certificate_Response_1_1)
+      if Code = Certificate and Minor_Version = 1;
 
    -- 10.9 CHALLENGE request and CHALLENGE_AUTH response messages
 
@@ -681,7 +762,16 @@ package SPDM is
        NS_Trusted_Environment => 16#F#)
    with Size => 4;
 
-   type Challenge_Auth_Response is
+   type Challenge_Auth_Response_1_0 is
+      message
+         Slot            : Slot;
+         Slot_Mask       : Slot_Mask;
+         Cert_Chain_Hash : Hash;
+         Nonce           : Opaque
+            with Size => 8 * 32;
+      end message;
+
+   type Challenge_Auth_Response_1_1 is
       message
          Basic_Mut_Auth_Req : Boolean;
          Reserved           : Reserved_3;
@@ -705,8 +795,11 @@ package SPDM is
          Signature : Signature;
       end message;
 
-   for Response use (Data => Challenge_Auth_Response)
-      if Code = Challenge_Auth;
+   for Response use (Data => Challenge_Auth_Response_1_0)
+      if Code = Challenge_Auth and Minor_Version = 0;
+
+   for Response use (Data => Challenge_Auth_Response_1_1)
+      if Code = Challenge_Auth and Minor_Version = 1;
 
    -- 10.12 ERROR response message
 
@@ -725,9 +818,9 @@ package SPDM is
        Response_Not_Ready     => 16#42#,
        Request_Resynch        => 16#43#,
        Vendor                 => 16#FF#)
-   with Size => 16;
+   with Size => 8;
 
-   type Session_ID is mod 2**16;
+   type Session_ID is mod 2**8;
 
    type RDT_Exponent is mod 2**8;
    type Token is mod 2**8;
@@ -747,7 +840,58 @@ package SPDM is
    type Vendor_ID_Double is mod 2**16;
    type Vendor_ID_Quad is mod 2**32;
 
-   type Error_Response is
+   type Error_Response_1_0 is
+      message
+         Error_Code : Error_Code
+            then Zero_Error_Data
+               if Error_Code = Invalid_Request
+                  or Error_Code = Busy
+                  or Error_Code = Unexpected_Request
+                  or Error_Code = Unspecified
+                  or Error_Code = Major_Version_Mismatch
+                  or Error_Code = Response_Not_Ready
+                  or Error_Code = Request_Resynch
+            then Request_Response_Code
+               if Error_Code = Unsupported_Request
+            then Registry_ID
+               if Error_Code = Vendor;
+         Zero_Error_Data : Zero_Error_Data
+            then Response_Not_Ready_Data
+               if Error_Code = Response_Not_Ready
+            then null
+               if Error_Code /= Response_Not_Ready;
+         Request_Response_Code : Request_Response_Code
+            then null;
+         Response_Not_Ready_Data : Response_Not_Ready_Data
+            then null;
+         Registry_ID : Registry_ID;
+         Vendor_ID_Len : Vendor_ID_Len
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Len'Last - Error_Code'First + 1)
+                  if Vendor_ID_Len = 0
+                     and Registry_ID = Reg_DMTF
+            then Vendor_ID_Double
+               if Vendor_ID_Len = 2
+                  and (Registry_ID = Reg_TCG
+                       or Registry_ID = Reg_USB
+                       or Registry_ID = Reg_PCI_SIG
+                       or Registry_ID = Reg_MIPI
+                       or Registry_ID = Reg_CXL
+                       or Registry_ID = Reg_JEDEC)
+            then Vendor_ID_Quad
+               if Vendor_ID_Len = 4
+                  and (Registry_ID = Reg_IANA
+                       or Registry_ID = Reg_HD_Base_T);
+         Vendor_ID_Double : Vendor_ID_Double
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Double'Last - Error_Code'First + 1);
+         Vendor_ID_Quad : Vendor_ID_Quad
+            then Opaque_Error_Data
+               with Size => Message'Size - (Vendor_ID_Quad'Last - Error_Code'First + 1);
+         Opaque_Error_Data : Opaque;
+      end message;
+
+   type Error_Response_1_1 is
       message
          Error_Code : Error_Code
             then Invalid_Session_ID
@@ -809,8 +953,11 @@ package SPDM is
          Opaque_Error_Data : Opaque;
       end message;
 
-   for Response use (Data => Error_Response)
-      if Code = Error;
+   for Response use (Data => Error_Response_1_0)
+      if Code = Error and Minor_Version = 0;
+
+   for Response use (Data => Error_Response_1_1)
+      if Code = Error and Minor_Version = 1;
 
    -- 10.13 RESPOND_IF_READY request message format
 
