@@ -174,7 +174,7 @@ package SPDM is
          Version_Number_Entries : Version_Number_Entries
             --  ISSUE: Componolit/RecordFlux#404
             --  with Size => Version_Number_Entry_Count * Version_Number_Entry'Size;
-            with Size => Version_Number_Entry_Count * 8;
+            with Size => Version_Number_Entry_Count * 16;
       end message;
 
    for Response use (Data => Version_Response)
