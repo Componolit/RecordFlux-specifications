@@ -844,7 +844,7 @@ package SPDM is
       end message;
 
    for Request use (Data => Key_Exchange_Request)
-      if Code = Key_Exchange;
+      if Code = Key_Exchange and Minor_Version = 1;
 
    type Heartbeat_Period is mod 2**8;
 
@@ -900,7 +900,7 @@ package SPDM is
       end message;
 
    for Response use (Data => Key_Exchange_Response)
-      if Code = Key_Exchange_RSP;
+      if Code = Key_Exchange_RSP and Minor_Version = 1;
 
    --  10.17 FINISH request and FINISH_RSP response messages
 
@@ -926,7 +926,7 @@ package SPDM is
       end message;
 
    for Request use (Data => Finish_Request)
-      if Code = Finish;
+      if Code = Finish and Minor_Version = 1;
 
    type Finish_Response is
       message
@@ -954,7 +954,7 @@ package SPDM is
       end message;
 
    for Request use (Data => End_Session_Request)
-      if Code = End_Session;
+      if Code = End_Session and Minor_Version = 1;
 
    type End_Session_Response is
       message
@@ -963,6 +963,6 @@ package SPDM is
       end message;
 
    for Response use (Data => End_Session_Response)
-      if Code = End_Session_ACK;
+      if Code = End_Session_ACK and Minor_Version = 1;
 
 end SPDM;
