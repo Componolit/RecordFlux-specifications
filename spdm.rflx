@@ -201,20 +201,20 @@ package SPDM is
          Reserved_1 : Reserved_8;
          CT_Exponent : CT_Exponent;
          Reserved_2 : Reserved_16;
-         Reserved_3 : Reserved_1;
-         Cert_Cap : Boolean;
-         Chal_Cap : Boolean;
-         Unused_Meas_Cap : Reserved_2;
-         Unused_Meas_Fresh_Cap : Reserved_1;
-         Encrypt_Cap : Boolean;
          MAC_Cap : Boolean;
-         Mut_Auth_Cap : Boolean;
-         Key_Ex_Cap : Boolean;
-         PSK_Cap : PSK_Request_Cap;
-         Encap_Cap : Boolean;
-         H_Beat_Cap : Boolean;
-         Key_Upd_Cap : Boolean;
+         Encrypt_Cap : Boolean;
+         Unused_Meas_Fresh_Cap : Reserved_1;
+         Unused_Meas_Cap : Reserved_2;
+         Chal_Cap : Boolean;
+         Cert_Cap : Boolean;
+         Reserved_3 : Reserved_1;
          Handshake_In_The_Clear_Cap : Boolean;
+         Key_Upd_Cap : Boolean;
+         H_Beat_Cap : Boolean;
+         Encap_Cap : Boolean;
+         PSK_Cap : PSK_Request_Cap;
+         Key_Ex_Cap : Boolean;
+         Mut_Auth_Cap : Boolean;
          Pub_Key_ID_Cap : Boolean;
          Reserved_4 : Reserved_15
             then null
@@ -270,12 +270,12 @@ package SPDM is
          Reserved_1 : Reserved_8;
          CT_Exponent : CT_Exponent;
          Reserved_2 : Reserved_16;
-         Cache_Cap : Boolean;
-         Cert_Cap : Boolean;
-         Chal_Cap : Boolean;
-         Meas_Cap : Meas_Cap;
-         Meas_Fresh_Cap : Boolean;
          Reserved_3 : Reserved_2;
+         Meas_Fresh_Cap : Boolean;
+         Meas_Cap : Meas_Cap;
+         Chal_Cap : Boolean;
+         Cert_Cap : Boolean;
+         Cache_Cap : Boolean;
          Reserved_4 : Reserved_8;
          Reserved_5 : Reserved_8;
          Reserved_6 : Reserved_8;
@@ -288,22 +288,22 @@ package SPDM is
          Reserved_1 : Reserved_8;
          CT_Exponent : CT_Exponent;
          Reserved_2 : Reserved_16;
-         Cache_Cap : Boolean;
-         Cert_Cap : Boolean;
-         Chal_Cap : Boolean;
-         Meas_Cap : Meas_Cap;
-         Meas_Fresh_Cap : Boolean;
-         Encrypt_Cap : Boolean;
          MAC_Cap : Boolean;
-         Mut_Auth_Cap : Boolean;
-         Key_Ex_Cap : Boolean;
-         PSK_Cap : PSK_Resp_Cap;
-         Encap_Cap : Boolean;
-         H_Beat_Cap : Boolean;
-         Key_Upd_Cap : Boolean;
+         Encrypt_Cap : Boolean;
+         Meas_Fresh_Cap : Boolean;
+         Meas_Cap : Meas_Cap;
+         Chal_Cap : Boolean;
+         Cert_Cap : Boolean;
+         Cache_Cap : Boolean;
          Handshake_In_The_Clear_Cap : Boolean;
-         Pub_Key_ID_Cap : Boolean;
-         Reserved_4 : Reserved_15
+         Key_Upd_Cap : Boolean;
+         H_Beat_Cap : Boolean;
+         Encap_Cap : Boolean;
+         PSK_Cap : PSK_Resp_Cap;
+         Key_Ex_Cap : Boolean;
+         Mut_Auth_Cap : Boolean;
+         Reserved_4 : Reserved_15;
+         Pub_Key_ID_Cap : Boolean
             then null
                if --  Encrypt_Cap:
                   --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
