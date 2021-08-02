@@ -158,7 +158,8 @@ package SPDM is
          Alpha : Alpha
             --  Assume a released version
             then null
-               if Alpha = 0;
+               if Alpha = 0
+                  or Alpha = 1;
       end message;
 
    type Version_Number_Entries is sequence of Version_Number_Entry;
