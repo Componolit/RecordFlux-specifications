@@ -104,7 +104,7 @@ package SPDM is
                if Major_Version = 1;
          Minor_Version : Minor_Version
             then Code
-               if Minor_Version = 1 or Minor_Version = 0;
+               if Minor_Version <= 1;
          Code : Request_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
@@ -117,7 +117,7 @@ package SPDM is
                if Major_Version = 1;
          Minor_Version : Minor_Version
             then Code
-               if Minor_Version = 1 or Minor_Version = 0;
+               if Minor_Version <= 1;
          Code : Response_Code;
          Data : Opaque
             with Size => Message'Size - (Code'Last - Major_Version'First + 1);
@@ -158,8 +158,7 @@ package SPDM is
          Alpha : Alpha
             --  Assume a released version
             then null
-               if Alpha = 0
-                  or Alpha = 1;
+               if Alpha <= 1;
       end message;
 
    type Version_Number_Entries is sequence of Version_Number_Entry;
@@ -189,6 +188,11 @@ package SPDM is
        PSK_Req_Supported   => 1)
    with Size => 2;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Get_Capabilities_Request_1_0 is
       message
          Param_1 : Reserved_8;
@@ -264,6 +268,11 @@ package SPDM is
        PSK_Resp_With_Context    => 2)
    with Size => 2;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Capabilities_Response_1_0 is
       message
          Param_1 : Reserved_8;
@@ -333,7 +342,7 @@ package SPDM is
    -- 10.11 Measurement block
 
    type Measurement_Specification is
-      (DMTF => 0)
+      (DMTF => 1)
    with Size => 8;
 
    type DMTF_Spec_Measurement_Value_Representation is
@@ -431,27 +440,25 @@ package SPDM is
                if Alg_Type = DHE
             then AEAD_Reserved_1
                if Alg_Type = AEAD_Cipher_Suite
-            then RBAA_Reserved_1
+            then RBAA_TPM_ALG_ECDSA_ECC_NIST_P384
                if Alg_Type = Req_Base_Asym_Alg
             then KS_Reserved_1
                if Alg_Type = Key_Schedule;
-         DHE_Reserved_1 : Reserved_8;
-         DHE_Reserved_2 : Reserved_2;
+         DHE_Reserved_1 : Reserved_2;
          DHE_SecP521r1 : Boolean;
          DHE_SecP384r1 : Boolean;
          DHE_SecP256r1 : Boolean;
          DHE_FFDHE4096 : Boolean;
          DHE_FFDHE3072 : Boolean;
-         DHE_FFDHE2048 : Boolean
+         DHE_FFDHE2048 : Boolean;
+         DHE_Reserved_2 : Reserved_8
             then Alg_External;
-         AEAD_Reserved_1 : Reserved_8;
-         AEAD_Reserved_2 : Reserved_5;
+         AEAD_Reserved_1 : Reserved_5;
          AEAD_ChaCha20_Poly1305 : Boolean;
          AEAD_AES_256_GCM : Boolean;
-         AEAD_AES_128_GCM : Boolean
+         AEAD_AES_128_GCM : Boolean;
+         AEAD_Reserved_2 : Reserved_8
             then Alg_External;
-         RBAA_Reserved_1 : Reserved_7;
-         RBAA_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
          RBAA_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
          RBAA_TPM_ALG_RSAPSS_4096 : Boolean;
          RBAA_TPM_ALG_RSASSA_4096 : Boolean;
@@ -459,11 +466,13 @@ package SPDM is
          RBAA_TPM_ALG_RSAPSS_3072 : Boolean;
          RBAA_TPM_ALG_RSASSA_3072 : Boolean;
          RBAA_TPM_ALG_RSAPSS_2048 : Boolean;
-         RBAA_TPM_ALG_RSASSA_2048 : Boolean
+         RBAA_TPM_ALG_RSASSA_2048 : Boolean;
+         RBAA_Reserved_1 : Reserved_7;
+         RBAA_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean
             then Alg_External;
-         KS_Reserved_1 : Reserved_8;
-         KS_Reserved_2 : Reserved_7;
-         KS_SPDM : Boolean
+         KS_Reserved_1 : Reserved_7;
+         KS_SPDM : Boolean;
+         KS_Reserved_2 : Reserved_8
             then Alg_External;
          Alg_External : Ext_Algs
             with Size => 32 * Ext_Alg_Count;
@@ -477,6 +486,11 @@ package SPDM is
    type Ext_Asym_Count is range 0 .. 2**8 - 1 with Size => 8;
    type Ext_Hash_Count is range 0 .. 2**8 - 1 with Size => 8;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Negotiate_Algorithms_Request_1_0 is
       message
          Param_1 : Reserved_8;
@@ -487,9 +501,6 @@ package SPDM is
          Measurement_Specification_Reserved : Reserved_7;
          Measurement_Specification_DMTF : Boolean;
          Reserved_1 : Reserved_8;
-         Base_Asym_Algo_Reserved_1 : Reserved_16;
-         Base_Asym_Algo_Reserved_2 : Reserved_7;
-         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
          Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSAPSS_4096 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSASSA_4096 : Boolean;
@@ -498,14 +509,17 @@ package SPDM is
          Base_Asym_Algo_TPM_ALG_RSASSA_3072 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSAPSS_2048 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSASSA_2048 : Boolean;
-         Base_Hash_Algo_Reserved_1 : Reserved_24;
-         Base_Hash_Algo_Reserved_2 : Reserved_2;
+         Base_Asym_Algo_Reserved_1 : Reserved_7;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
+         Base_Asym_Algo_Reserved_2 : Reserved_16;
+         Base_Hash_Algo_Reserved_1 : Reserved_2;
          Base_Hash_Algo_TPM_ALG_SHA3_512 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA3_384 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA3_256 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_512 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_384 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_256 : Boolean;
+         Base_Hash_Algo_Reserved_2 : Reserved_24;
          Reserved_2 : Reserved_64;
          Reserved_3 : Reserved_32;
          Ext_Asym_Count : Ext_Asym_Count;
@@ -527,9 +541,6 @@ package SPDM is
          Measurement_Specification_Reserved : Reserved_7;
          Measurement_Specification_DMTF : Boolean;
          Reserved_1 : Reserved_8;
-         Base_Asym_Algo_Reserved_1 : Reserved_16;
-         Base_Asym_Algo_Reserved_2 : Reserved_7;
-         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
          Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P384 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSAPSS_4096 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSASSA_4096 : Boolean;
@@ -538,14 +549,17 @@ package SPDM is
          Base_Asym_Algo_TPM_ALG_RSASSA_3072 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSAPSS_2048 : Boolean;
          Base_Asym_Algo_TPM_ALG_RSASSA_2048 : Boolean;
-         Base_Hash_Algo_Reserved_1 : Reserved_24;
-         Base_Hash_Algo_Reserved_2 : Reserved_2;
+         Base_Asym_Algo_Reserved_1 : Reserved_7;
+         Base_Asym_Algo_TPM_ALG_ECDSA_ECC_NIST_P521 : Boolean;
+         Base_Asym_Algo_Reserved_2 : Reserved_16;
+         Base_Hash_Algo_Reserved_1 : Reserved_2;
          Base_Hash_Algo_TPM_ALG_SHA3_512 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA3_384 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA3_256 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_512 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_384 : Boolean;
          Base_Hash_Algo_TPM_ALG_SHA_256 : Boolean;
+         Base_Hash_Algo_Reserved_2 : Reserved_24;
          Reserved_2 : Reserved_64;
          Reserved_3 : Reserved_32;
          Ext_Asym_Count : Ext_Asym_Count;
@@ -576,41 +590,41 @@ package SPDM is
    --  ISSUE: Componolit/RecordFlux#104
    --  This should be little endian
    type Measurement_Hash_Algo is
-      (Raw_Bit_Streams_Only =>  0,
-       MH_TPM_ALG_SHA_256   =>  1,
-       MH_TPM_ALG_SHA_384   =>  2,
-       MH_TPM_ALG_SHA_512   =>  4,
-       MH_TPM_ALG_SHA3_256  =>  8,
-       MH_TPM_ALG_SHA3_384  => 16,
-       MH_TPM_ALG_SHA3_512  => 32)
-   with Size => 64;
+      (Raw_Bit_Streams_Only => 2147483648,
+       MH_TPM_ALG_SHA_256   => 1073741824,
+       MH_TPM_ALG_SHA_384   => 536870912,
+       MH_TPM_ALG_SHA_512   => 268435456,
+       MH_TPM_ALG_SHA3_256  => 134217728,
+       MH_TPM_ALG_SHA3_384  => 67108864,
+       MH_TPM_ALG_SHA3_512  => 33554432)
+   with Size => 32;
 
    --  ISSUE: Componolit/RecordFlux#104
    --  This should be little endian
    type Base_Asym_Sel is
-      (BA_Unsupported                 =>   0,
-       BA_TPM_ALG_RSASSA_2048         =>   1,
-       BA_TPM_ALG_RSAPSS_2048         =>   2,
-       BA_TPM_ALG_RSASSA_3072         =>   4,
-       BA_TPM_ALG_RSAPSS_3072         =>   8,
-       BA_TPM_ALG_ECDSA_ECC_NIST_P256 =>  16,
-       BA_TPM_ALG_RSASSA_4096         =>  32,
-       BA_TPM_ALG_RSAPSS_4096         =>  64,
-       BA_TPM_ALG_ECDSA_ECC_NIST_P384 => 128,
-       BA_TPM_ALG_ECDSA_ECC_NIST_P521 => 256)
-   with Size => 64;
+      (BA_Unsupported                 => 2147483648,
+       BA_TPM_ALG_RSASSA_2048         => 1073741824,
+       BA_TPM_ALG_RSAPSS_2048         => 536870912,
+       BA_TPM_ALG_RSASSA_3072         => 268435456,
+       BA_TPM_ALG_RSAPSS_3072         => 134217728,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P256 => 67108864,
+       BA_TPM_ALG_RSASSA_4096         => 33554432,
+       BA_TPM_ALG_RSAPSS_4096         => 16777216,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P384 => 8388608,
+       BA_TPM_ALG_ECDSA_ECC_NIST_P521 => 4194304)
+   with Size => 32;
 
    --  ISSUE: Componolit/RecordFlux#104
    --  This should be little endian
    type Base_Hash_Sel is
-      (BH_Unsupported      =>  0,
-       BH_TPM_ALG_SHA_256  =>  1,
-       BH_TPM_ALG_SHA_384  =>  2,
-       BH_TPM_ALG_SHA_512  =>  4,
-       BH_TPM_ALG_SHA3_256 =>  8,
-       BH_TPM_ALG_SHA3_384 => 16,
-       BH_TPM_ALG_SHA3_512 => 32)
-   with Size => 64;
+      (BH_Unsupported      => 2147483648,
+       BH_TPM_ALG_SHA_256  => 1073741824,
+       BH_TPM_ALG_SHA_384  => 536870912,
+       BH_TPM_ALG_SHA_512  => 268435456,
+       BH_TPM_ALG_SHA3_256 => 134217728,
+       BH_TPM_ALG_SHA3_384 => 67108864,
+       BH_TPM_ALG_SHA3_512 => 33554432)
+   with Size => 32;
 
    type Algorithms_Response is
       message
@@ -711,6 +725,11 @@ package SPDM is
    for Request use (Data => Get_Certificate_Request)
       if Code = Get_Certificate;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Certificate_Response_1_0 is
       message
          Slot : Slot;
@@ -763,6 +782,11 @@ package SPDM is
        NS_Trusted_Environment => 16#F#)
    with Size => 4;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Challenge_Auth_Response_1_0 is
       message
          Slot            : Slot;
@@ -841,6 +865,11 @@ package SPDM is
    type Vendor_ID_Double is mod 2**16;
    type Vendor_ID_Quad is mod 2**32;
 
+   --  ISSUE: Componolit/RecordFlux#609
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by a refinement.
    type Error_Response_1_0 is
       message
          Error_Code : Error_Code
