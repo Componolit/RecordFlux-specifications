@@ -55,6 +55,52 @@ package SPDM is
    type Update_Version_Number is range 0 .. 2**4 - 1 with Size => 4;
    type Alpha is range 0 .. 2**4 - 1 with Size => 4;
 
+   -- 8.3 SPDM request codes
+
+   type Request_Code is
+      (Get_Digests                   => 16#81#,
+       Get_Certificate               => 16#82#,
+       Challenge                     => 16#83#,
+       Get_Version                   => 16#84#,
+       Get_Measurements              => 16#E0#,
+       Get_Capabilities              => 16#E1#,
+       Negotiate_Algorithms          => 16#E3#,
+       Key_Exchange                  => 16#E4#,
+       Finish                        => 16#E5#,
+       PSK_Exchange                  => 16#E6#,
+       PSK_Finish                    => 16#E7#,
+       Heartbeat                     => 16#E8#,
+       Key_Update                    => 16#E9#,
+       Get_Encapsulated_Request      => 16#EA#,
+       Deliver_Encapsulated_Response => 16#EB#,
+       End_Session                   => 16#EC#,
+       Respond_If_Ready              => 16#FF#,
+       Vendor_Defined_Request        => 16#FE#)
+   with Size => 8;
+
+   -- 8.4 SPDM response codes
+
+   type Response_Code is
+      (Digests                   => 16#01#,
+       Certificate               => 16#02#,
+       Challenge_Auth            => 16#03#,
+       Version                   => 16#04#,
+       Measurements              => 16#60#,
+       Capabilities              => 16#61#,
+       Algorithms                => 16#63#,
+       Key_Exchange_RSP          => 16#64#,
+       Finish_RSP                => 16#65#,
+       PSK_Exchange_RSP          => 16#66#,
+       PSK_Finish_RSP            => 16#67#,
+       Heartbeat_ACK             => 16#68#,
+       Key_Update_ACK            => 16#69#,
+       Encapsulated_Request      => 16#6A#,
+       Encapsulated_Response_ACK => 16#6B#,
+       End_Session_ACK           => 16#6C#,
+       Vendor_Defined_Response   => 16#7E#,
+       Error                     => 16#7F#)
+   with Size => 8;
+
    --  Common types
 
    type Slot_Present is range 0 .. 1 with Size => 1;
@@ -1000,52 +1046,6 @@ package SPDM is
          Reserved_2 : Reserved_8;
       end message;
 
-   -- 8.3 SPDM request codes
-
-   type Request_Code is
-      (Get_Digests                   => 16#81#,
-       Get_Certificate               => 16#82#,
-       Challenge                     => 16#83#,
-       Get_Version                   => 16#84#,
-       Get_Measurements              => 16#E0#,
-       Get_Capabilities              => 16#E1#,
-       Negotiate_Algorithms          => 16#E3#,
-       Key_Exchange                  => 16#E4#,
-       Finish                        => 16#E5#,
-       PSK_Exchange                  => 16#E6#,
-       PSK_Finish                    => 16#E7#,
-       Heartbeat                     => 16#E8#,
-       Key_Update                    => 16#E9#,
-       Get_Encapsulated_Request      => 16#EA#,
-       Deliver_Encapsulated_Response => 16#EB#,
-       End_Session                   => 16#EC#,
-       Respond_If_Ready              => 16#FF#,
-       Vendor_Defined_Request        => 16#FE#)
-   with Size => 8;
-
-   -- 8.4 SPDM response codes
-
-   type Response_Code is
-      (Digests                   => 16#01#,
-       Certificate               => 16#02#,
-       Challenge_Auth            => 16#03#,
-       Version                   => 16#04#,
-       Measurements              => 16#60#,
-       Capabilities              => 16#61#,
-       Algorithms                => 16#63#,
-       Key_Exchange_RSP          => 16#64#,
-       Finish_RSP                => 16#65#,
-       PSK_Exchange_RSP          => 16#66#,
-       PSK_Finish_RSP            => 16#67#,
-       Heartbeat_ACK             => 16#68#,
-       Key_Update_ACK            => 16#69#,
-       Encapsulated_Request      => 16#6A#,
-       Encapsulated_Response_ACK => 16#6B#,
-       End_Session_ACK           => 16#6C#,
-       Vendor_Defined_Response   => 16#7E#,
-       Error                     => 16#7F#)
-   with Size => 8;
-
    -- 8.2 Generic SPDM message format
 
    type Request is
@@ -1057,53 +1057,53 @@ package SPDM is
             then Code
                if Minor_Version <= 1;
          Code : Request_Code
-            then Get_Version
+            then Get_Version_Request
                if Code = Get_Version
-            then Get_Capabilities_1_0
+            then Get_Capabilities_Request_1_0
                if Code = Get_Capabilities and Minor_Version = 0
-            then Get_Capabilities_1_1
+            then Get_Capabilities_Request_1_1
                if Code = Get_Capabilities and Minor_Version = 1
-            then Negotiate_Algorithms_1_0
+            then Negotiate_Algorithms_Request_1_0
                if Code = Negotiate_Algorithms and Minor_Version = 0
-            then Negotiate_Algorithms_1_1
+            then Negotiate_Algorithms_Request_1_1
                if Code = Negotiate_Algorithms and Minor_Version = 1
-            then Get_Digests
+            then Get_Digests_Request
                if Code = Get_Digests
-            then Get_Certificate
+            then Get_Certificate_Request
                if Code = Get_Certificate
-            then Challenge
+            then Challenge_Request
                if Code = Challenge
-            then Respond_If_Ready
+            then Respond_If_Ready_Request
                if Code = Respond_If_Ready
-            then Key_Exchange
+            then Key_Exchange_Request
                if Code = Key_Exchange and Minor_Version = 1
-            then Finish
+            then Finish_Request
                if Code = Finish and Minor_Version = 1
-            then End_Session
+            then End_Session_Request
                if Code = End_Session and Minor_Version = 1;
-         Get_Version : Get_Version
+         Get_Version_Request : Get_Version_Request
             then null;
-         Get_Capabilities_1_0 : Get_Capabilities_Request_1_0
+         Get_Capabilities_Request_1_0 : Get_Capabilities_Request_1_0
             then null;
-         Get_Capabilities_1_1 : Get_Capabilities_Request_1_1
+         Get_Capabilities_Request_1_1 : Get_Capabilities_Request_1_1
             then null;
-         Negotiate_Algorithms_1_0 : Negotiate_Algorithms_Request_1_0
+         Negotiate_Algorithms_Request_1_0 : Negotiate_Algorithms_Request_1_0
             then null;
-         Negotiate_Algorithms_1_1 : Negotiate_Algorithms_Request_1_1
+         Negotiate_Algorithms_Request_1_1 : Negotiate_Algorithms_Request_1_1
             then null;
-         Get_Digests : Get_Digests_Request
+         Get_Digests_Request : Get_Digests_Request
             then null;
-         Get_Certificate : Get_Certificate_Request
+         Get_Certificate_Request : Get_Certificate_Request
             then null;
-         Challenge : Challenge_Request
+         Challenge_Request : Challenge_Request
             then null;
-         Respond_If_Ready : Respond_If_Ready_Request
+         Respond_If_Ready_Request : Respond_If_Ready_Request
             then null;
-         Key_Exchange : Key_Exchange_Request
+         Key_Exchange_Request : Key_Exchange_Request
             then null;
-         Finish : Finish_Request
+         Finish_Request : Finish_Request
             then null;
-         End_Session : End_Session_Request;
+         End_Session_Request : End_Session_Request;
       end message;
 
    type Response is
@@ -1143,33 +1143,33 @@ package SPDM is
                if Code = Finish_RSP
             then End_Session_Response
                if Code = End_Session_ACK and Minor_Version = 1;
-         Version : Version_Response
+         Version_Response : Version_Response
             then null;
-         Capabilities_1_0 : Capabilities_Response_1_0
+         Capabilities_Response_1_0 : Capabilities_Response_1_0
             then null;
-         Capabilities_1_1 : Capabilities_Response_1_1
+         Capabilities_Response_1_1 : Capabilities_Response_1_1
             then null;
-         Algorithms : Algorithms_Response
+         Algorithms_Response : Algorithms_Response
             then null;
-         Digests : Digests_Response
+         Digests_Response : Digests_Response
             then null;
-         Certificate_1_0 : Certificate_Response_1_0
+         Certificate_Response_1_0 : Certificate_Response_1_0
             then null;
-         Certificate_1_1 : Certificate_Response_1_1
+         Certificate_Response_1_1 : Certificate_Response_1_1
             then null;
-         Challenge_Auth_1_0 : Challenge_Auth_Response_1_0
+         Challenge_Auth_Response_1_0 : Challenge_Auth_Response_1_0
             then null;
-         Challenge_Auth_1_1 : Challenge_Auth_Response_1_1
+         Challenge_Auth_Response_1_1 : Challenge_Auth_Response_1_1
             then null;
-         Error_1_0 : Error_Response_1_0
+         Error_Response_1_0 : Error_Response_1_0
             then null;
-         Error_1_1 : Error_Response_1_1
+         Error_Response_1_1 : Error_Response_1_1
             then null;
-         Key_Exchange : Key_Exchange_Response
+         Key_Exchange_Response : Key_Exchange_Response
             then null;
-         Finish : Finish_Response
+         Finish_Response : Finish_Response
             then null;
-         End_Session : End_Session_Response;
+         End_Session_Response : End_Session_Response;
       end message;
 
 end SPDM;
