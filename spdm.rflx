@@ -22,7 +22,12 @@ package SPDM is
 
    -- Base types
 
-   type Length is mod 2**16;
+   type Length is mod 2**8;
+   -- ISSUE: Componolit/RecordFlux#104
+   -- Length is defined as mod 2**16. To support little endian
+   -- multiple 8 bit length fields will be used instead. If Length
+   -- is used in an expression, the little endian value needs to be
+   -- calculated.
    type Index is range 1 .. 2**8 - 1 with Size => 8;
 
    -- ISSUE: Componolit/RecordFlux#601
@@ -322,7 +327,8 @@ package SPDM is
       message
          Index : Index;
          Measurement_Specification : Measurement_Specification;
-         Measurement_Size : Length
+         Measurement_Size_1 : Length;
+         Measurement_Size_2 : Length
             then DMTF_Spec_Measurement_Value_Representation
                if Measurement_Specification = DMTF;
          DMTF_Spec_Measurement_Value_Representation : DMTF_Spec_Measurement_Value_Representation;
@@ -331,11 +337,13 @@ package SPDM is
          --  be derived from the measurement hash algorithm that the ALGORITHM response message
          --  returns.
          --  FIXME: What does "shall be derived" mean - equals the hash length?
-         DMTF_Spec_Measurement_Value_Size : Length;
+         DMTF_Spec_Measurement_Value_Size_1 : Length;
+         DMTF_Spec_Measurement_Value_Size_2 : Length;
          DMTF_Spec_Measurement_Value : Opaque
-            with Size => 8 * DMTF_Spec_Measurement_Value_Size
+            with Size => 8 * (DMTF_Spec_Measurement_Value_Size_2 * 256 + DMTF_Spec_Measurement_Value_Size_1)
             then null
-               if Measurement_Size = 8 * (DMTF_Spec_Measurement_Value'Last - Measurement_Size'Last);
+               if Measurement_Size_2 * 256 + Measurement_Size_1
+                  = 8 * (DMTF_Spec_Measurement_Value'Last - Measurement_Size_2'Last);
       end message;
 
    -- [201] Extended Algorithm field format
@@ -455,9 +463,10 @@ package SPDM is
       message
          Param_1 : Reserved_8;
          Param_2 : Reserved_8;
-         Length : Length
+         Length_1 : Length;
+         Length_2 : Length
             then Measurement_Specification_Reserved
-               if Length <= 64;
+               if Length_2 * 256 + Length_1 <= 64;
          Measurement_Specification_Reserved : Reserved_7;
          Measurement_Specification_DMTF : Boolean;
          Reserved_1 : Reserved_8;
@@ -495,9 +504,10 @@ package SPDM is
       message
          Req_Alg_Struct_Count : Alg_Struct_Count;
          Param_2 : Reserved_8;
-         Length : Length
+         Length_1 : Length;
+         Length_2 : Length
             then Measurement_Specification_Reserved
-               if Length <= 128;
+               if Length_2 * 256 + Length_1 <= 128;
          Measurement_Specification_Reserved : Reserved_7;
          Measurement_Specification_DMTF : Boolean;
          Reserved_1 : Reserved_8;
@@ -532,8 +542,8 @@ package SPDM is
             then Req_Alg_Structs
                --  Length is the total length of the message, we have to subtract the common header
                --  of Request.
-               with Size => 8 * Length - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
-                  if 8 * Length >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
+               with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
+                  if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
          Req_Alg_Structs : Req_Alg_Structs;
          -- ISSUE: Componolit/systematization-binary-schemas#8
          -- The number of elements should also match Req_Alg_Struct_Count
@@ -584,9 +594,10 @@ package SPDM is
       message
          Resp_Alg_Struct_Count : Alg_Struct_Count;
          Param_2 : Reserved_8;
-         Length : Length
+         Length_1 : Length;
+         Length_2 : Length
             then Measurement_Specification_Sel
-               if Length <= 128;
+               if Length_2 * 256 + Length_1 <= 128;
          Measurement_Specification_Sel: Measurement_Specification;
          Reserved_1 : Reserved_8;
          Measurement_Hash_Algo : Measurement_Hash_Algo;
@@ -608,8 +619,8 @@ package SPDM is
             then Resp_Alg_Structs
                --  Length is the total length of the message, we have to subtract the common header
                --  of Request.
-               with Size => 8 * Length - 16 - (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1)
-                  if 8 * Length >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
+               with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1)
+                  if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
          Resp_Alg_Structs : Resp_Alg_Structs;
          -- ISSUE: Componolit/systematization-binary-schemas#8
          -- The number of elements should also match Resp_Alg_Struct_Count
@@ -664,7 +675,8 @@ package SPDM is
          --     For non-first requests, Offset is the sum of PortionLength values in all previous
          --     GET_CERTIFICATE responses.
          Offset : Offset;
-         Length : Length;
+         Length_1 : Length;
+         Length_2 : Length;
       end message;
 
    --  ISSUE: Componolit/RecordFlux#609
@@ -681,10 +693,12 @@ package SPDM is
       message
          Slot : Slot;
          Param_2 : Reserved_8;
-         Portion_Length : Length;
-         Remainder_Length : Length;
+         Portion_Length_1 : Length;
+         Portion_Length_2 : Length;
+         Remainder_Length_1 : Length;
+         Remainder_Length_2 : Length;
          Cert_Chain : Opaque
-            with Size => 8 * Portion_Length;
+            with Size => 8 * (Portion_Length_2 * 256 + Portion_Length_1);
       end message;
 
    -- 10.9 CHALLENGE request and CHALLENGE_AUTH response messages
@@ -746,11 +760,12 @@ package SPDM is
          --    - be 0 if Hash_Type was TCB_Measurement and no measurement is required
          --    - contain a hash of all measurements if Hash_Type was All_Measurments
          Measurement_Summary_Hash : Hash;
-         Opaque_Length : Length
+         Opaque_Length_1 : Length;
+         Opaque_Length_2 : Length
             then Opaque_Data
-               if Opaque_Length <= 1024;
+               if Opaque_Length_2 * 256 + Opaque_Length_1 <= 1024;
          Opaque_Data : Opaque
-            with Size => 8 * Opaque_Length;
+            with Size => 8 * (Opaque_Length_2 * 256 + Opaque_Length_1);
          Signature : Signature;
       end message;
 
@@ -938,9 +953,10 @@ package SPDM is
             -- Size of ExchangeData is determined by the algorithm selected in previous ALGORITHMS
             -- message
             with Size => 8 * 96;
-         Opaque_Data_Length : Length;
+         Opaque_Data_Length_1 : Length;
+         Opaque_Data_Length_2 : Length;
          Opaque_Data : Opaque
-            with Size => 8 * Opaque_Data_Length;
+            with Size => 8 * (Opaque_Data_Length_2 * 256 + Opaque_Data_Length_1);
       end message;
 
    type Heartbeat_Period is mod 2**8;
@@ -980,9 +996,10 @@ package SPDM is
             -- Size of MeasurementSummaryHash is determined by the algorithm selected in previous
             -- ALGORITHMS message
             with Size => 8 * 76;
-         Opaque_Data_Length : Length;
+         Opaque_Data_Length_1 : Length;
+         Opaque_Data_Length_2 : Length;
          Opaque_Data : Opaque
-            with Size => 8 * Opaque_Data_Length;
+            with Size => 8 * (Opaque_Data_Length_2 * 256 + Opaque_Data_Length_1);
          Signature : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of Signature is determined by the algorithm selected in previous ALGORITHMS
