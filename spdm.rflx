@@ -7,8 +7,16 @@ package SPDM is
    -- We will define a static hash type Hash, even though this is acutally based on prior
    -- negotiation. We will use Hash'Size throughout this spec to simulate that.
    -- ISSUE: Componolit/systematization-binary-schemas#53
-   type Hash is mod 2**64;
-   type Signature is mod 2**64;
+   type Hash is
+      message
+         Data : Opaque
+            with Size => 8 * 48;
+      end message;
+   type Signature is
+      message
+         Data : Opaque
+            with Size => 8 * 96;
+      end message;
 
    type Hashes is sequence of Hash;
 
@@ -681,14 +689,14 @@ package SPDM is
          Slot_Mask : Slot_Mask;
          Digests_Data : Hashes
             --  FIXME: Hash'Size should work, but doesn't
-            with Size => 64 * (Slot_Mask_Slot_0_Present
-                               + Slot_Mask_Slot_1_Present
-                               + Slot_Mask_Slot_2_Present
-                               + Slot_Mask_Slot_3_Present
-                               + Slot_Mask_Slot_4_Present
-                               + Slot_Mask_Slot_5_Present
-                               + Slot_Mask_Slot_6_Present
-                               + Slot_Mask_Slot_7_Present);
+            with Size => 8 * 48 * (Slot_Mask_Slot_0_Present
+                                   + Slot_Mask_Slot_1_Present
+                                   + Slot_Mask_Slot_2_Present
+                                   + Slot_Mask_Slot_3_Present
+                                   + Slot_Mask_Slot_4_Present
+                                   + Slot_Mask_Slot_5_Present
+                                   + Slot_Mask_Slot_6_Present
+                                   + Slot_Mask_Slot_7_Present);
       end message;
 
    for Response use (Data => Digests_Response)
@@ -812,6 +820,7 @@ package SPDM is
          --    - contain a hash if Hash_Type was TCB_Measurement
          --    - be 0 if Hash_Type was TCB_Measurement and no measurement is required
          --    - contain a hash of all measurements if Hash_Type was All_Measurments
+         Measurement_Summary_Hash : Hash;
          Opaque_Length : Length
             then Opaque_Data
                if Opaque_Length <= 1024;
@@ -845,7 +854,7 @@ package SPDM is
        Vendor                 => 16#FF#)
    with Size => 8;
 
-   type Session_ID is mod 2**8;
+   type Error_Session_ID is mod 2**8;
 
    type RDT_Exponent is mod 2**8;
    type Token is mod 2**8;
@@ -943,7 +952,7 @@ package SPDM is
                if Error_Code = Unsupported_Request
             then Registry_ID
                if Error_Code = Vendor;
-         Invalid_Session_ID : Session_ID
+         Invalid_Session_ID : Error_Session_ID
             then null;
          Zero_Error_Data : Zero_Error_Data
             then Response_Not_Ready_Data
@@ -1002,19 +1011,21 @@ package SPDM is
 
    -- 10.16 KEY_EXCHANGE request and KEY_EXCHANGE_RSP response messages
 
+   type Session_ID is mod 2 ** 16;
+
    type Key_Exchange_Request is
       message
          Measurement_Summary_Hash_Type : Measurement_Summary_Hash_Type;
          Slot : Slot;
          Req_Session_ID : Session_ID;
-         Reserved : Reserved_8;
+         Reserved : Reserved_16;
          Random_Data : Opaque
             with Size => 8 * 32;
          Exchange_Data : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of ExchangeData is determined by the algorithm selected in previous ALGORITHMS
             -- message
-            with Size => 8 * 42;
+            with Size => 8 * 96;
          Opaque_Data_Length : Length;
          Opaque_Data : Opaque
             with Size => 8 * Opaque_Data_Length;
@@ -1054,12 +1065,12 @@ package SPDM is
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of ExchangeData is determined by the algorithm selected in previous ALGORITHMS
             -- message
-            with Size => 8 * 42;
+            with Size => 8 * 76;
          Measurement_Summary_Hash : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of MeasurementSummaryHash is determined by the algorithm selected in previous
             -- ALGORITHMS message
-            with Size => 8 * 42;
+            with Size => 8 * 76;
          Opaque_Data_Length : Length;
          Opaque_Data : Opaque
             with Size => 8 * Opaque_Data_Length;
@@ -1067,13 +1078,13 @@ package SPDM is
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of Signature is determined by the algorithm selected in previous ALGORITHMS
             -- message
-            with Size => 8 * 42;
+            with Size => 8 * 52;
          Responder_Verify_Data : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- If both the Requester and Responder set HANDSHAKE_IN_THE_CLEAR_CAP to 1, then this
             -- field shall be absent. Otherwise its size is H, which is the hash size determined
             -- by previous ALGORITHMS message
-            with Size => 8 * 42;
+            with Size => 8 * 52;
       end message;
 
    for Response use (Data => Key_Exchange_Response)
@@ -1094,12 +1105,12 @@ package SPDM is
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of Signature is determined by the algorithm selected in previous
             -- ALGORITHMS message
-            with Size => 8 * 42;
+            with Size => 8 * 216;
          Requester_Verify_Data : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- Size of Requester_Verify_Data is determined by the algorithm selected in previous
             -- ALGORITHMS message
-            with Size => 8 * 42;
+            with Size => 8 * 216;
       end message;
 
    for Request use (Data => Finish_Request)
@@ -1115,7 +1126,7 @@ package SPDM is
             -- flage in the previous capabilities request
             -- Size of Responder_Verify_Data is determined by the algorithm selected
             -- in previous ALGORITHMS message
-            with Size => 8 * 42;
+            with Size => 8 * 48;
       end message;
 
    for Response use (Data => Finish_Response)
