@@ -1140,7 +1140,7 @@ package SPDM is
             then Key_Exchange_Response
                if Code = Key_Exchange_RSP and Minor_Version = 1
             then Finish_Response
-               if Code = Finish_RSP
+               if Code = Finish_RSP and Minor_Version = 1
             then End_Session_Response
                if Code = End_Session_ACK and Minor_Version = 1;
          Version_Response : Version_Response
