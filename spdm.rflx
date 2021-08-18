@@ -1055,6 +1055,7 @@ package SPDM is
       message
          Reserved_1 : Reserved_7;
          Clear_Negotiated_State : Boolean;
+         Reserved_2 : Reserved_8;
       end message;
 
    type End_Session_Response is
