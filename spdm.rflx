@@ -1049,6 +1049,24 @@ package SPDM is
             with Size => 8 * 48;
       end message;
 
+   --  10.21 KEY_UPDATE request and KEY_UPDATE_ACK response messages
+
+   type Key_Operation is (Update_Key => 1, Update_All_Keys => 2, Verify_New_Key => 3) with Size => 8;
+
+   type Key_Update_Tag is range 0 .. 2 ** 8 - 1 with Size => 8;
+
+   type Key_Update_Request is
+      message
+         Key_Operation : Key_Operation;
+         Tag : Key_Update_Tag;
+      end message;
+
+   type Key_Update_ACK_Response is
+      message
+         Key_Operation : Key_Operation;
+         Tag : Key_Update_Tag;
+      end message;
+
    --  10.24 END_SESSION request and END_SESSION_ACK response messages
 
    type End_Session_Request is
@@ -1097,6 +1115,8 @@ package SPDM is
                if Code = Key_Exchange and Minor_Version = 1
             then Finish_Request
                if Code = Finish and Minor_Version = 1
+            then Key_Update_Request
+               if Code = Key_Update and Minor_Version = 1
             then End_Session_Request
                if Code = End_Session and Minor_Version = 1;
          Get_Version_Request : Get_Version_Request
@@ -1120,6 +1140,8 @@ package SPDM is
          Key_Exchange_Request : Key_Exchange_Request
             then null;
          Finish_Request : Finish_Request
+            then null;
+         Key_Update_Request : Key_Update_Request
             then null;
          End_Session_Request : End_Session_Request;
       end message;
@@ -1159,6 +1181,8 @@ package SPDM is
                if Code = Key_Exchange_RSP and Minor_Version = 1
             then Finish_Response
                if Code = Finish_RSP and Minor_Version = 1
+            then Key_Update_ACK_Response
+               if Code = Key_Update_ACK and Minor_Version = 1
             then End_Session_Response
                if Code = End_Session_ACK and Minor_Version = 1;
          Version_Response : Version_Response
@@ -1186,6 +1210,8 @@ package SPDM is
          Key_Exchange_Response : Key_Exchange_Response
             then null;
          Finish_Response : Finish_Response
+            then null;
+         Key_Update_ACK_Response : Key_Update_Ack_Response
             then null;
          End_Session_Response : End_Session_Response;
       end message;
