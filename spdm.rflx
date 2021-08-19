@@ -344,7 +344,7 @@ package SPDM is
          Measurement_Operation : Measurement_Operation
             then Nonce
                if Generate_Signature = True
-            then Reserved_2
+            then null
                if Generate_Signature = False;
          Nonce : Opaque
             with Size => 32 * 8;
@@ -387,9 +387,11 @@ package SPDM is
          DMTF_Spec_Measurement_Value_Size_2 : Length;
          DMTF_Spec_Measurement_Value : Opaque
             with Size => 8 * (DMTF_Spec_Measurement_Value_Size_2 * 256 + DMTF_Spec_Measurement_Value_Size_1)
+            -- ISSUE: Componolit/RecordFlux#104
             then null
-               if Measurement_Size_2 * 256 + Measurement_Size_1
-                  = 8 * (DMTF_Spec_Measurement_Value'Last - Measurement_Size_2'Last);
+               -- ISSUE: Componolit/RecordFlux#104
+               if 8 * (Measurement_Size_2 * 256 + Measurement_Size_1)
+                  = DMTF_Spec_Measurement_Value'Last - Measurement_Size_2'Last;
       end message;
 
    type Measurement_Record is sequence of Measurement_Block;
@@ -407,6 +409,7 @@ package SPDM is
          Measurement_Record_Length_2 : Length;
          Measurement_Record_Length_3 : Length;
          Measurement_Record : Measurement_Record
+            -- ISSUE: Componolit/RecordFlux#104
             with Size => 8 * (Measurement_Record_Length_3 * 65536
                               + Measurement_Record_Length_2 * 256
                               + Measurement_Record_Length_1);
@@ -415,8 +418,12 @@ package SPDM is
          Opaque_Length_1 : Length;
          Opaque_Length_2 : Length;
          Opaque_Data : Opaque
+            -- ISSUE: Componolit/RecordFlux#104
             with Size => 8 * (Opaque_Length_2 * 256 + Opaque_Length_1);
-         Signature : Signature;
+         --  The existence of Signature depends on the request
+         --  ISSUE: Componolit/RecordFlux-specifications#609
+         Signature : Opaque
+            with Size => Message'Last - Opaque_Data'Last;
       end message;
 
    type Measurements_Response_1_1 is
@@ -429,6 +436,7 @@ package SPDM is
          Measurement_Record_Length_2 : Length;
          Measurement_Record_Length_3 : Length;
          Measurement_Record : Measurement_Record
+            -- ISSUE: Componolit/RecordFlux#104
             with Size => 8 * (Measurement_Record_Length_3 * 65536
                               + Measurement_Record_Length_2 * 256
                               + Measurement_Record_Length_1);
@@ -437,8 +445,12 @@ package SPDM is
          Opaque_Length_1 : Length;
          Opaque_Length_2 : Length;
          Opaque_Data : Opaque
+            -- ISSUE: Componolit/RecordFlux#104
             with Size => 8 * (Opaque_Length_2 * 256 + Opaque_Length_1);
-         Signature : Signature;
+         --  The existence of Signature depends on the request
+         --  ISSUE: Componolit/RecordFlux-specifications#609
+         Signature : Opaque
+            with Size => Message'Last - Opaque_Data'Last;
       end message;
 
    -- [201] Extended Algorithm field format
