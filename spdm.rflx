@@ -304,7 +304,53 @@ package SPDM is
                   and (Mut_Auth_Cap = False or Encap_Cap = True);
       end message;
 
-   -- 10.11 Measurement block
+   -- 10.11 GET_MEASUREMENTS request and MEASUREMENTS response message
+
+   --  The value 0 queries the responder for the total number of measurements
+   --  available. The value 255 requests all measurements. The values 1 to 254
+   --  request the measurement at the index corresponding to that value.
+   type Measurement_Operation is range 0 .. 255 with
+      Size => 8;
+
+   type Narrow_Slot is
+      (NS_0                   => 16#0#,
+       NS_1                   => 16#1#,
+       NS_2                   => 16#2#,
+       NS_3                   => 16#3#,
+       NS_4                   => 16#4#,
+       NS_5                   => 16#5#,
+       NS_6                   => 16#6#,
+       NS_7                   => 16#7#,
+       NS_Trusted_Environment => 16#F#)
+   with Size => 4;
+
+   type Get_Measurements_Request_1_0 is
+      message
+         Reserved_1 : Reserved_7;
+         Generate_Signature : Boolean;
+         Measurement_Operation : Measurement_Operation
+            then Nonce
+               if Generate_Signature = True
+            then null
+               if Generate_Signature = False;
+         Nonce : Opaque
+            with Size => 32 * 8;
+      end message;
+
+   type Get_Measurements_Request_1_1 is
+      message
+         Reserved_1 : Reserved_7;
+         Generate_Signature : Boolean;
+         Measurement_Operation : Measurement_Operation
+            then Nonce
+               if Generate_Signature = True
+            then Reserved_2
+               if Generate_Signature = False;
+         Nonce : Opaque
+            with Size => 32 * 8;
+         Reserved_2 : Reserved_4;
+         Slot_ID_Param : Narrow_Slot;
+      end message;
 
    type Measurement_Specification is
       (DMTF => 1)
@@ -320,10 +366,10 @@ package SPDM is
        Mutable_Firmware       => 1,
        Hardware_Configuration => 2,
        Firmware_Configuration => 3,
-       Measured_Manifest      => 4)
+       Measured_Manifest      => 4) --  SPDM 1.1 only
    with Size => 7;
 
-   type Measurment_Block is
+   type Measurement_Block is
       message
          Index : Index;
          Measurement_Specification : Measurement_Specification;
@@ -344,6 +390,55 @@ package SPDM is
             then null
                if Measurement_Size_2 * 256 + Measurement_Size_1
                   = 8 * (DMTF_Spec_Measurement_Value'Last - Measurement_Size_2'Last);
+      end message;
+
+   type Measurement_Record is sequence of Measurement_Block;
+
+   type Measurement_Count is range 0 .. 2 ** 8 - 1 with Size => 8;
+
+   type Block_Count is range 0 .. 2 ** 8 - 1 with Size => 8;
+
+   type Measurements_Response_1_0 is
+      message
+         Number_Of_Indices : Measurement_Count;
+         Reserved_1 : Reserved_8;
+         Number_Of_Blocks : Block_Count;
+         Measurement_Record_Length_1 : Length;
+         Measurement_Record_Length_2 : Length;
+         Measurement_Record_Length_3 : Length;
+         Measurement_Record : Measurement_Record
+            with Size => 8 * (Measurement_Record_Length_3 * 65536
+                              + Measurement_Record_Length_2 * 256
+                              + Measurement_Record_Length_1);
+         Nonce : Opaque
+            with Size => 8 * 32;
+         Opaque_Length_1 : Length;
+         Opaque_Length_2 : Length;
+         Opaque_Data : Opaque
+            with Size => 8 * (Opaque_Length_2 * 256 + Opaque_Length_1);
+         Signature : Signature;
+      end message;
+
+   type Measurements_Response_1_1 is
+      message
+         Number_Of_Indices : Measurement_Count;
+         Reserved_1 : Reserved_4;
+         Slot_ID : Narrow_Slot;
+         Number_Of_Blocks : Block_Count;
+         Measurement_Record_Length_1 : Length;
+         Measurement_Record_Length_2 : Length;
+         Measurement_Record_Length_3 : Length;
+         Measurement_Record : Measurement_Record
+            with Size => 8 * (Measurement_Record_Length_3 * 65536
+                              + Measurement_Record_Length_2 * 256
+                              + Measurement_Record_Length_1);
+         Nonce : Opaque
+            with Size => 8 * 32;
+         Opaque_Length_1 : Length;
+         Opaque_Length_2 : Length;
+         Opaque_Data : Opaque
+            with Size => 8 * (Opaque_Length_2 * 256 + Opaque_Length_1);
+         Signature : Signature;
       end message;
 
    -- [201] Extended Algorithm field format
@@ -716,18 +811,6 @@ package SPDM is
          Nonce : Opaque
             with Size => 8 * 32;
       end message;
-
-   type Narrow_Slot is
-      (NS_0                   => 16#0#,
-       NS_1                   => 16#1#,
-       NS_2                   => 16#2#,
-       NS_3                   => 16#3#,
-       NS_4                   => 16#4#,
-       NS_5                   => 16#5#,
-       NS_6                   => 16#6#,
-       NS_7                   => 16#7#,
-       NS_Trusted_Environment => 16#F#)
-   with Size => 4;
 
    --  ISSUE: Componolit/RecordFlux#609
    --  This message differs between SPDM version 1.0 and 1.1.
@@ -1109,6 +1192,10 @@ package SPDM is
                if Code = Get_Certificate
             then Challenge_Request
                if Code = Challenge
+            then Get_Measurements_1_0
+               if Code = Get_Measurements and Minor_Version = 0
+            then Get_Measurements_1_1
+               if Code = Get_Measurements and Minor_Version = 1
             then Respond_If_Ready_Request
                if Code = Respond_If_Ready
             then Key_Exchange_Request
@@ -1134,6 +1221,10 @@ package SPDM is
          Get_Certificate_Request : Get_Certificate_Request
             then null;
          Challenge_Request : Challenge_Request
+            then null;
+         Get_Measurements_1_0 : Get_Measurements_Request_1_0
+            then null;
+         Get_Measurements_1_1 : Get_Measurements_Request_1_1
             then null;
          Respond_If_Ready_Request : Respond_If_Ready_Request
             then null;
@@ -1173,6 +1264,10 @@ package SPDM is
                if Code = Challenge_Auth and Minor_Version = 0
             then Challenge_Auth_Response_1_1
                if Code = Challenge_Auth and Minor_Version = 1
+            then Measurements_1_0
+               if Code = Measurements and Minor_Version = 0
+            then Measurements_1_1
+               if Code = Measurements and Minor_Version = 1
             then Error_Response_1_0
                if Code = Error and Minor_Version = 0
             then Error_Response_1_1
@@ -1202,6 +1297,10 @@ package SPDM is
          Challenge_Auth_Response_1_0 : Challenge_Auth_Response_1_0
             then null;
          Challenge_Auth_Response_1_1 : Challenge_Auth_Response_1_1
+            then null;
+         Measurements_1_0 : Measurements_Response_1_0
+            then null;
+         Measurements_1_1 : Measurements_Response_1_1
             then null;
          Error_Response_1_0 : Error_Response_1_0
             then null;
