@@ -229,7 +229,7 @@ package SPDM is
 
    type Meas_Cap is
       (Meas_Supported => 0,
-       Meas_Play      => 1,
+       Meas_Plain     => 1,
        Meas_Signed    => 2)
    with Size => 2;
 
@@ -301,7 +301,12 @@ package SPDM is
                   and (PSK_Cap = PSK_Resp_Unsupported or (Encrypt_Cap = True or MAC_Cap = True))
                   --  ENCAP_CAP:
                   --  If mutual authentication is supported, this field shall be set.
-                  and (Mut_Auth_Cap = False or Encap_Cap = True);
+                  and (Mut_Auth_Cap = False or Encap_Cap = True)
+                  --  PUB_KEY_ID_CAP:
+                  --  If set, the public key of the Responder was provisioned to the Requester.
+                  --  The transport layer is responsible for identifying the Requester. In this case,
+                  --  CERT_CAP of the Responder shall be 0.
+                  and (Pub_Key_ID_Cap = False or Cert_Cap = False);
       end message;
 
    -- 10.11 GET_MEASUREMENTS request and MEASUREMENTS response message
@@ -1140,7 +1145,7 @@ package SPDM is
          Responder_Verify_Data : Opaque
             -- ISSUE: Componolit/RecordFlux#609
             -- Presence of Responder_Verify_Data is determined by the Handshake_In_The_Clear_Cap
-            -- flage in the previous capabilities request
+            -- flag in the previous capabilities request
             -- Size of Responder_Verify_Data is determined by the algorithm selected
             -- in previous ALGORITHMS message
             with Size => 8 * 48;
@@ -1328,5 +1333,100 @@ package SPDM is
             then null;
          End_Session_Response : End_Session_Response;
       end message;
+
+   --  FIXME: Update transcript hash
+
+   generic
+      Transport : Channel with Readable, Writable;
+   session Responder with
+      Initial => Init,
+      Final => Error
+   is
+      Request : SPDM::Request;
+      Supported_Versions : Version_Number_Entries;
+   begin
+      state Init
+      is
+      begin
+         Supported_Versions'Append
+            (Version_Number_Entry'(Major_Version         => 1,
+                                   Minor_Version         => 1,
+                                   Update_Version_Number => 0,
+                                   Alpha                 => 0));
+         --  FIXME: Reset all state
+         Transport'Read (Request);
+      transition
+         then Version
+            if Request.Code = Get_Version
+         then Caps
+            if Request.Code = Get_Capabilities
+         then
+            Init
+      exception
+         then Error
+      end Init;
+
+      state Version
+      is
+      begin
+         Transport'Write
+            (Response'(Major_Version                               => 1,
+                       Minor_Version                               => 1,
+                       Code                                        => Version,
+                       Version_Response_Param_1                    => 0,
+                       Version_Response_Param_2                    => 0,
+                       Version_Response_Reserved                   => 0,
+                       Version_Response_Version_Number_Entry_Count => 1,
+                       Version_Response_Version_Number_Entries     => Supported_Versions));
+         Transport'Read (Request);
+      transition
+         then Version
+            if Request.Code = Get_Version
+         then Caps
+            if Request.Code = Get_Capabilities
+         then Init
+      exception
+         then Error
+      end Version;
+
+      state Caps
+      is
+      begin
+         Transport'Write
+            (Response'(Major_Version                                        => 1,
+                       Minor_Version                                        => 1,
+                       Code                                                 => Capabilities,
+                       Capabilities_Response_1_1_Param_1                    => 0,
+                       Capabilities_Response_1_1_Param_2                    => 0,
+                       Capabilities_Response_1_1_Reserved_1                 => 0,
+                       Capabilities_Response_1_1_CT_Exponent                => 10,
+                       Capabilities_Response_1_1_Reserved_2                 => 0,
+                       Capabilities_Response_1_1_MAC_Cap                    => True,
+                       Capabilities_Response_1_1_Encrypt_Cap                => True,
+                       Capabilities_Response_1_1_Meas_Fresh_Cap             => False,
+                       Capabilities_Response_1_1_Meas_Cap                   => Meas_Plain,
+                       Capabilities_Response_1_1_Chal_Cap                   => False,
+                       Capabilities_Response_1_1_Cert_Cap                   => False,  --  Supported in WP 2.3.7
+                       Capabilities_Response_1_1_Cache_Cap                  => False,
+                       Capabilities_Response_1_1_Handshake_In_The_Clear_Cap => True,
+                       Capabilities_Response_1_1_Key_Upd_Cap                => False,  --  Supported in WP 2.3.8
+                       Capabilities_Response_1_1_H_Beat_Cap                 => False,
+                       Capabilities_Response_1_1_Encap_Cap                  => False,
+                       Capabilities_Response_1_1_PSK_Cap                    => PSK_Resp_Unsupported,
+                       Capabilities_Response_1_1_Key_Ex_Cap                 => True,
+                       Capabilities_Response_1_1_Mut_Auth_Cap               => False,
+                       Capabilities_Response_1_1_Reserved_4                 => 0,
+                       Capabilities_Response_1_1_Pub_Key_ID_Cap             => False));
+         Transport'Read (Request);
+      transition
+         then Version
+            if Request.Code = Get_Version
+         then Init
+      exception
+         then Error
+      end Caps;
+
+      state Error is null state;
+   end Responder;
 
 end SPDM;
