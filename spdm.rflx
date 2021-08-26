@@ -1357,9 +1357,13 @@ package SPDM is
          Transport'Read (Request);
       transition
          then Version
-            if Request.Code = Get_Version
+            --  In case a Request is not valid the exception transition
+            --  should be chosen but this is not implemented yet.
+            --  ISSUE: Componolit/RecordFlux#691
+            if Request'Valid and Request.Code = Get_Version
          then Caps
-            if Request.Code = Get_Capabilities
+            --  ISSUE: Componolit/RecordFlux#691
+            if Request'Valid and Request.Code = Get_Capabilities
          then
             Init
       exception
@@ -1381,9 +1385,11 @@ package SPDM is
          Transport'Read (Request);
       transition
          then Version
-            if Request.Code = Get_Version
+            --  ISSUE: Componolit/RecordFlux#691
+            if Request'Valid and Request.Code = Get_Version
          then Caps
-            if Request.Code = Get_Capabilities
+            --  ISSUE: Componolit/RecordFlux#691
+            if Request'Valid and Request.Code = Get_Capabilities
          then Init
       exception
          then Error
@@ -1420,7 +1426,8 @@ package SPDM is
          Transport'Read (Request);
       transition
          then Version
-            if Request.Code = Get_Version
+            --  ISSUE: Componolit/RecordFlux#691
+            if Request'Valid and Request.Code = Get_Version
          then Init
       exception
          then Error
