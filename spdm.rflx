@@ -1196,7 +1196,7 @@ package SPDM is
                if Minor_Version <= 1;
          Code : Request_Code
             then Get_Version_Request
-               if Code = Get_Version
+               if Code = Get_Version and Minor_Version = 0
             then Get_Capabilities_Request_1_0
                if Code = Get_Capabilities and Minor_Version = 0
             then Get_Capabilities_Request_1_1
@@ -1266,7 +1266,7 @@ package SPDM is
                if Minor_Version <= 1;
          Code : Response_Code
             then Version_Response
-               if Code = Version
+               if Code = Version and Minor_Version = 0
             then Capabilities_Response_1_0
                if Code = Capabilities and Minor_Version = 0
             then Capabilities_Response_1_1
@@ -1375,7 +1375,7 @@ package SPDM is
       begin
          Transport'Write
             (Response'(Major_Version                               => 1,
-                       Minor_Version                               => 1,
+                       Minor_Version                               => 0,
                        Code                                        => Version,
                        Version_Response_Param_1                    => 0,
                        Version_Response_Param_2                    => 0,
