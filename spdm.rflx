@@ -132,13 +132,13 @@ package SPDM is
 
    type Version_Number_Entry is
       message
-         Major_Version : Major_Version;
-         Minor_Version : Minor_Version;
-         Update_Version_Number : Update_Version_Number;
          Alpha : Alpha
             --  Assume a released version
-            then null
+            then Update_Version_Number
                if Alpha <= 1;
+         Update_Version_Number : Update_Version_Number;
+         Minor_Version : Minor_Version;
+         Major_Version : Major_Version;
       end message;
 
    type Version_Number_Entries is sequence of Version_Number_Entry;
@@ -1349,10 +1349,10 @@ package SPDM is
       is
       begin
          Supported_Versions'Append
-            (Version_Number_Entry'(Major_Version         => 1,
-                                   Minor_Version         => 1,
+            (Version_Number_Entry'(Alpha                 => 0,
                                    Update_Version_Number => 0,
-                                   Alpha                 => 0));
+                                   Minor_Version         => 1,
+                                   Major_Version         => 1));
          --  FIXME: Reset all state
          Transport'Read (Request);
       transition
