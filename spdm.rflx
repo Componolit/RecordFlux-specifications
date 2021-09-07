@@ -910,8 +910,6 @@ package SPDM is
    type Vendor_ID_Double is mod 2**16;
    type Vendor_ID_Quad is mod 2**32;
 
-   type Request_Response_Code is mod 2**8;
-
    --  ISSUE: Componolit/RecordFlux#609
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
@@ -937,7 +935,7 @@ package SPDM is
                if Error_Code = Response_Not_Ready
             then null
                if Error_Code /= Response_Not_Ready;
-         Request_Response_Code : Request_Response_Code
+         Request_Response_Code : Request_Code
             then null;
          Response_Not_Ready_Data : Response_Not_Ready_Data
             then null;
@@ -1001,7 +999,7 @@ package SPDM is
             then null;
          Response_Not_Ready_Data : Response_Not_Ready_Data
             then null;
-         Request_Response_Code : Request_Response_Code
+         Request_Response_Code : Request_Code
             then null;
          Registry_ID : Registry_ID;
          Vendor_ID_Len : Vendor_ID_Len
