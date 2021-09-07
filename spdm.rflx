@@ -1338,7 +1338,7 @@ package SPDM is
       Transport : Channel with Readable, Writable;
    session Responder with
       Initial => Init,
-      Final => Error
+      Final => End_Session
    is
       Request : SPDM::Request;
       Supported_Versions : Version_Number_Entries;
@@ -1362,10 +1362,11 @@ package SPDM is
          then Caps
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
-         then
-            Init
+         then Error_Unsupported_Request
+            if Request'Valid
+         then Error_Invalid_Request
       exception
-         then Error
+         then Error_Unspecified
       end Init;
 
       state Version
@@ -1388,9 +1389,11 @@ package SPDM is
          then Caps
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
-         then Init
+         then Error_Unsupported_Request
+            if Request'Valid
+         then Error_Invalid_Request
       exception
-         then Error
+         then Error_Unspecified
       end Version;
 
       state Caps
@@ -1426,12 +1429,59 @@ package SPDM is
          then Version
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         then Init
+         then Error_Unsupported_Request
+            if Request'Valid
+         then Error_Invalid_Request
       exception
-         then Error
+         then Error_Unspecified
       end Caps;
 
-      state Error is null state;
+      state Error_Unsupported_Request
+      is
+      begin
+         Transport'Write
+            (Response'(Major_Version                            => 1,
+                       Minor_Version                            => 1,
+                       Code                                     => Error,
+                       Error_Response_1_1_Error_Code            => Unsupported_Request,
+                       Error_Response_1_1_Request_Response_Code => Request.Code));
+      transition
+         then End_Session
+      exception
+         then Error_Unspecified
+      end Error_Unsupported_Request;
+
+      state Error_Invalid_Request
+      is
+      begin
+         Transport'Write
+            (Response'(Major_Version                      => 1,
+                       Minor_Version                      => 1,
+                       Code                               => Error,
+                       Error_Response_1_1_Error_Code      => Invalid_Request,
+                       Error_Response_1_1_Zero_Error_Data => 0));
+      transition
+         then End_Session
+      exception
+         then Error_Unspecified
+      end Error_Invalid_Request;
+
+      state Error_Unspecified
+      is
+      begin
+         Transport'Write
+            (Response'(Major_Version                      => 1,
+                       Minor_Version                      => 1,
+                       Code                               => Error,
+                       Error_Response_1_1_Error_Code      => Unspecified,
+                       Error_Response_1_1_Zero_Error_Data => 0));
+      transition
+         then End_Session
+      exception
+         then End_Session
+      end Error_Unspecified;
+
+      state End_Session is null state;
    end Responder;
 
 end SPDM;
