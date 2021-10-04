@@ -1354,19 +1354,19 @@ package SPDM is
          --  FIXME: Reset all state
          Transport'Read (Request);
       transition
-         then Version
+         goto Version
             --  In case a Request is not valid the exception transition
             --  should be chosen but this is not implemented yet.
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         then Caps
+         goto Caps
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
-         then Error_Unsupported_Request
+         goto Error_Unsupported_Request
             if Request'Valid
-         then Error_Invalid_Request
+         goto Error_Invalid_Request
       exception
-         then Error_Unspecified
+         goto Error_Unspecified
       end Init;
 
       state Version
@@ -1383,17 +1383,17 @@ package SPDM is
                        Version_Response_Version_Number_Entries     => Supported_Versions));
          Transport'Read (Request);
       transition
-         then Version
+         goto Version
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         then Caps
+         goto Caps
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
-         then Error_Unsupported_Request
+         goto Error_Unsupported_Request
             if Request'Valid
-         then Error_Invalid_Request
+         goto Error_Invalid_Request
       exception
-         then Error_Unspecified
+         goto Error_Unspecified
       end Version;
 
       state Caps
@@ -1426,14 +1426,14 @@ package SPDM is
                        Capabilities_Response_1_1_Pub_Key_ID_Cap             => False));
          Transport'Read (Request);
       transition
-         then Version
+         goto Version
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         then Error_Unsupported_Request
+         goto Error_Unsupported_Request
             if Request'Valid
-         then Error_Invalid_Request
+         goto Error_Invalid_Request
       exception
-         then Error_Unspecified
+         goto Error_Unspecified
       end Caps;
 
       state Error_Unsupported_Request
@@ -1446,9 +1446,9 @@ package SPDM is
                        Error_Response_1_1_Error_Code            => Unsupported_Request,
                        Error_Response_1_1_Request_Response_Code => Request.Code));
       transition
-         then End_Session
+         goto End_Session
       exception
-         then Error_Unspecified
+         goto Error_Unspecified
       end Error_Unsupported_Request;
 
       state Error_Invalid_Request
@@ -1461,9 +1461,9 @@ package SPDM is
                        Error_Response_1_1_Error_Code      => Invalid_Request,
                        Error_Response_1_1_Zero_Error_Data => 0));
       transition
-         then End_Session
+         goto End_Session
       exception
-         then Error_Unspecified
+         goto Error_Unspecified
       end Error_Invalid_Request;
 
       state Error_Unspecified
@@ -1476,9 +1476,9 @@ package SPDM is
                        Error_Response_1_1_Error_Code      => Unspecified,
                        Error_Response_1_1_Zero_Error_Data => 0));
       transition
-         then End_Session
+         goto End_Session
       exception
-         then End_Session
+         goto End_Session
       end Error_Unspecified;
 
       state End_Session is null state;
