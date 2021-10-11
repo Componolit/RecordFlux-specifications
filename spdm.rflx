@@ -6,7 +6,7 @@ package SPDM is
 
    -- We will define a static hash type Hash, even though this is acutally based on prior
    -- negotiation. We will use Hash'Size throughout this spec to simulate that.
-   -- ISSUE: Componolit/systematization-binary-schemas#53
+   -- ISSUE: Componolit/RecordFlux-specifications#92
    type Hash is
       message
          Data : Opaque
@@ -133,9 +133,9 @@ package SPDM is
    type Version_Number_Entry is
       message
          Alpha : Alpha
-            --  Assume a released version
+            --  [167] Released versions shall have an Alpha value of zero ( 0 )
             then Update_Version_Number
-               if Alpha <= 1;
+               if Alpha = 0;
          Update_Version_Number : Update_Version_Number;
          Minor_Version : Minor_Version;
          Major_Version : Major_Version;
@@ -165,11 +165,11 @@ package SPDM is
        PSK_Req_Supported   => 1)
    with Size => 2;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Get_Capabilities_Request_1_0 is
       message
          Param_1 : Reserved_8;
@@ -192,7 +192,7 @@ package SPDM is
          Reserved_3 : Reserved_1;
          Handshake_In_The_Clear_Cap : Boolean;
          Key_Upd_Cap : Boolean;
-         H_Beat_Cap : Boolean;
+         Hbeat_Cap : Boolean;
          Encap_Cap : Boolean;
          PSK_Cap : PSK_Request_Cap;
          Key_Ex_Cap : Boolean;
@@ -201,30 +201,36 @@ package SPDM is
          Reserved_4 : Reserved_15
             then null
                if --  Encrypt_Cap:
-                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  [177] If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
                   --  accordingly to indicate support.
                   (Encrypt_Cap = False or PSK_Cap = PSK_Req_Supported or Key_Ex_Cap = True)
                   --  MAC_Cap:
-                  --  If set, Requester supports message authentication. If set, one or more of
+                  --  [177] If set, Requester supports message authentication. If set, one or more of
                   --  PSK_CAP or KEY_EX_CAP fields shall be specified accordingly to indicate
                   --  support.
                   and (MAC_Cap = False or PSK_Cap = PSK_Req_Supported or Key_Ex_Cap = True)
                   --  Key_Ex_Cap:
-                  --  If set, Requester supports KEY_EXCHANGE messages. If set, one or more of
+                  --  [177] If set, Requester supports KEY_EXCHANGE messages. If set, one or more of
                   --  ENCRYPT_CAP and MAC_CAP shall be set.
                   and (Key_Ex_Cap = False or (Encrypt_Cap = True or MAC_Cap = True))
-                  --  If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  --  PSK_Cap:
+                  --  [177] If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
                   and (PSK_Cap /= PSK_Req_Supported or (Encrypt_Cap = True or MAC_Cap = True))
-                  --  ENCAP_CAP:
-                  --  If mutual authentication is supported, this field shall be set.
+                  --  Encap_Cap:
+                  --  [177] If mutual authentication is supported, this field shall be set.
                   and (Mut_Auth_Cap = False or Encap_Cap = True)
-                  --  HANDSHAKE_IN_THE_CLEAR_CAP
-                  --  If set, KEY_EX_CAP shall also be set.
+                  --  Handshake_In_The_Clear_Cap:
+                  --  [177] If set, KEY_EX_CAP shall also be set.
                   and (Handshake_In_The_Clear_Cap = False or Key_Ex_Cap = True)
-                  --  HANDSHAKE_IN_THE_CLEAR_CAP
-                  --  If the Requester does not support encryption and message authentication, then
+                  --  Handshake_In_The_Clear_Cap:
+                  --  [177] If the Requester does not support encryption and message authentication, then
                   --  this bit shall be zero.
-                  and (Encrypt_Cap = True or Mac_Cap = True or Handshake_In_The_Clear_Cap = False);
+                  and (Encrypt_Cap = True or Mac_Cap = True or Handshake_In_The_Clear_Cap = False)
+                  --  Pub_Key_ID_Cap:
+                  --  [177] If set, the public key of the Requester was provisioned to the Responder.
+                  --  The transport layer is responsible for identifying the Responder. In this case,
+                  --  CERT_CAP of the Requester shall be 0.
+                  and (Pub_Key_ID_Cap = False or Cert_Cap = False);
       end message;
 
    type Meas_Cap is
@@ -239,11 +245,11 @@ package SPDM is
        PSK_Resp_With_Context    => 2)
    with Size => 2;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Capabilities_Response_1_0 is
       message
          Param_1 : Reserved_8;
@@ -278,7 +284,7 @@ package SPDM is
          Cache_Cap : Boolean;
          Handshake_In_The_Clear_Cap : Boolean;
          Key_Upd_Cap : Boolean;
-         H_Beat_Cap : Boolean;
+         Hbeat_Cap : Boolean;
          Encap_Cap : Boolean;
          PSK_Cap : PSK_Resp_Cap;
          Key_Ex_Cap : Boolean;
@@ -287,23 +293,31 @@ package SPDM is
          Pub_Key_ID_Cap : Boolean
             then null
                if --  Encrypt_Cap:
-                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  [178] If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
                   --  accordingly to indicate support.
                   (Encrypt_Cap = False or PSK_Cap /= PSK_Resp_Unsupported or Key_Ex_Cap = True)
                   --  MAC_Cap:
-                  --  If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
+                  --  [178] If set, one or more of PSK_CAP or KEY_EX_CAP fields shall be specified
                   --  accordingly to indicate support.
                   and (MAC_Cap = False or PSK_Cap /= PSK_Resp_Unsupported or Key_Ex_Cap = True)
                   --  Key_Ex_Cap:
-                  --  If set, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  --  [178] If set, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
                   and (Key_Ex_Cap = False or (Encrypt_Cap = True or MAC_Cap = True))
-                  --  If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
+                  --  PSK_Cap:
+                  --  [178] If supported, one or more of ENCRYPT_CAP and MAC_CAP shall be set.
                   and (PSK_Cap = PSK_Resp_Unsupported or (Encrypt_Cap = True or MAC_Cap = True))
-                  --  ENCAP_CAP:
-                  --  If mutual authentication is supported, this field shall be set.
+                  --  Encap_Cap:
+                  --  [178] If mutual authentication is supported, this field shall be set.
                   and (Mut_Auth_Cap = False or Encap_Cap = True)
-                  --  PUB_KEY_ID_CAP:
-                  --  If set, the public key of the Responder was provisioned to the Requester.
+                  --  Handshake_In_The_Clear_Cap:
+                  --  [178] If set, KEY_EX_CAP shall also be set.
+                  and (Handshake_In_The_Clear_Cap = False or Key_Ex_Cap = True)
+                  --  Handshake_In_The_Clear_Cap:
+                  --  [178] If the Responder does not support encryption and message authentication,
+                  --  then this bit shall be zero.
+                  and ((Handshake_In_The_Clear_Cap = True and Mac_Cap = True) or Encrypt_Cap = False)
+                  --  Pub_Key_ID_Cap:
+                  --  [178] If set, the public key of the Responder was provisioned to the Requester.
                   --  The transport layer is responsible for identifying the Requester. In this case,
                   --  CERT_CAP of the Responder shall be 0.
                   and (Pub_Key_ID_Cap = False or Cert_Cap = False);
@@ -407,6 +421,11 @@ package SPDM is
 
    type Block_Count is range 0 .. 2 ** 8 - 1 with Size => 8;
 
+   --  ISSUE: Componolit/RecordFlux-specifications#92
+   --  This message differs between SPDM version 1.0 and 1.1.
+   --  Since the minor version is not accessible from
+   --  within this message one message is needed for each version
+   --  that is selected by an outer message.
    type Measurements_Response_1_0 is
       message
          Number_Of_Indices : Measurement_Count;
@@ -568,11 +587,11 @@ package SPDM is
    type Ext_Asym_Count is range 0 .. 2**8 - 1 with Size => 8;
    type Ext_Hash_Count is range 0 .. 2**8 - 1 with Size => 8;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Negotiate_Algorithms_Request_1_0 is
       message
          Param_1 : Reserved_8;
@@ -659,7 +678,7 @@ package SPDM is
                with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
                   if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
          Req_Alg_Structs : Req_Alg_Structs;
-         -- ISSUE: Componolit/systematization-binary-schemas#8
+         -- ISSUE: Componolit/RecordFlux#51
          -- The number of elements should also match Req_Alg_Struct_Count
       end message;
 
@@ -736,7 +755,7 @@ package SPDM is
                with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1)
                   if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
          Resp_Alg_Structs : Resp_Alg_Structs;
-         -- ISSUE: Componolit/systematization-binary-schemas#8
+         -- ISSUE: Componolit/RecordFlux#51
          -- The number of elements should also match Resp_Alg_Struct_Count
       end message;
 
@@ -793,11 +812,11 @@ package SPDM is
          Length_2 : Length;
       end message;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Certificate_Response_1_0 is
       message
          Slot : Slot;
@@ -831,11 +850,11 @@ package SPDM is
             with Size => 8 * 32;
       end message;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Challenge_Auth_Response_1_0 is
       message
          Slot            : Slot;
@@ -854,7 +873,7 @@ package SPDM is
          Cert_Chain_Hash    : Hash;
          Nonce : Opaque
             with Size => 8 * 32;
-         --  ISSUE: Componolit/systematization-binary-schemas#53
+         --  ISSUE: Componolit/RecordFlux-specifications#92
          --  This field shall
          --    - not be present if Hash_Type of the request was No_Measurement or measurement is
          --      unsupported
@@ -910,11 +929,11 @@ package SPDM is
    type Vendor_ID_Double is mod 2**16;
    type Vendor_ID_Quad is mod 2**32;
 
-   --  ISSUE: Componolit/RecordFlux#609
+   --  ISSUE: Componolit/RecordFlux-specifications#92
    --  This message differs between SPDM version 1.0 and 1.1.
    --  Since the minor version is not accessible from
    --  within this message one message is needed for each version
-   --  that is selected by a refinement.
+   --  that is selected by an outer message.
    type Error_Response_1_0 is
       message
          Error_Code : Error_Code
@@ -1049,7 +1068,7 @@ package SPDM is
          Random_Data : Opaque
             with Size => 8 * 32;
          Exchange_Data : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of ExchangeData is determined by the algorithm selected in previous ALGORITHMS
             -- message
             with Size => 8 * 96;
@@ -1087,12 +1106,12 @@ package SPDM is
          Random_Data : Opaque
             with Size => 8 * 32;
          Exchange_Data : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of ExchangeData is determined by the algorithm selected in previous ALGORITHMS
             -- message
             with Size => 8 * 76;
          Measurement_Summary_Hash : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of MeasurementSummaryHash is determined by the algorithm selected in previous
             -- ALGORITHMS message
             with Size => 8 * 76;
@@ -1101,12 +1120,12 @@ package SPDM is
          Opaque_Data : Opaque
             with Size => 8 * (Opaque_Data_Length_2 * 256 + Opaque_Data_Length_1);
          Signature : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of Signature is determined by the algorithm selected in previous ALGORITHMS
             -- message
             with Size => 8 * 52;
          Responder_Verify_Data : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- If both the Requester and Responder set HANDSHAKE_IN_THE_CLEAR_CAP to 1, then this
             -- field shall be absent. Otherwise its size is H, which is the hash size determined
             -- by previous ALGORITHMS message
@@ -1125,12 +1144,12 @@ package SPDM is
             then Requester_Verify_Data
                if Signature_Included = False;
          Signature : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of Signature is determined by the algorithm selected in previous
             -- ALGORITHMS message
             with Size => 8 * 216;
          Requester_Verify_Data : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Size of Requester_Verify_Data is determined by the algorithm selected in previous
             -- ALGORITHMS message
             with Size => 8 * 216;
@@ -1141,7 +1160,7 @@ package SPDM is
          Param_1 : Reserved_8;
          Param_2 : Reserved_8;
          Responder_Verify_Data : Opaque
-            -- ISSUE: Componolit/RecordFlux#609
+            -- ISSUE: Componolit/RecordFlux-specifications#92
             -- Presence of Responder_Verify_Data is determined by the Handshake_In_The_Clear_Cap
             -- flag in the previous capabilities request
             -- Size of Responder_Verify_Data is determined by the algorithm selected
@@ -1359,7 +1378,7 @@ package SPDM is
             --  should be chosen but this is not implemented yet.
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         goto Caps
+         goto Capabilities
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
          goto Error_Unsupported_Request
@@ -1386,7 +1405,7 @@ package SPDM is
          goto Version
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Version
-         goto Caps
+         goto Capabilities
             --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
          goto Error_Unsupported_Request
@@ -1396,7 +1415,7 @@ package SPDM is
          goto Error_Unspecified
       end Version;
 
-      state Caps
+      state Capabilities
       is
       begin
          Transport'Write
@@ -1417,7 +1436,7 @@ package SPDM is
                        Capabilities_Response_1_1_Cache_Cap                  => False,
                        Capabilities_Response_1_1_Handshake_In_The_Clear_Cap => True,
                        Capabilities_Response_1_1_Key_Upd_Cap                => False,  --  Supported in WP 2.3.8
-                       Capabilities_Response_1_1_H_Beat_Cap                 => False,
+                       Capabilities_Response_1_1_Hbeat_Cap                  => False,
                        Capabilities_Response_1_1_Encap_Cap                  => False,
                        Capabilities_Response_1_1_PSK_Cap                    => PSK_Resp_Unsupported,
                        Capabilities_Response_1_1_Key_Ex_Cap                 => True,
@@ -1434,7 +1453,7 @@ package SPDM is
          goto Error_Invalid_Request
       exception
          goto Error_Unspecified
-      end Caps;
+      end Capabilities;
 
       state Error_Unsupported_Request
       is
