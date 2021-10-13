@@ -185,8 +185,8 @@ package SPDM is
          Reserved_2 : Reserved_16;
          MAC_Cap : Boolean;
          Encrypt_Cap : Boolean;
-         Unused_Meas_Fresh_Cap : Reserved_1;
-         Unused_Meas_Cap : Reserved_2;
+         Meas_Fresh_Cap : Reserved_1;
+         Meas_Cap : Reserved_2;
          Chal_Cap : Boolean;
          Cert_Cap : Boolean;
          Reserved_3 : Reserved_1;
@@ -225,7 +225,7 @@ package SPDM is
                   --  Handshake_In_The_Clear_Cap:
                   --  [177] If the Requester does not support encryption and message authentication, then
                   --  this bit shall be zero.
-                  and (Encrypt_Cap = True or Mac_Cap = True or Handshake_In_The_Clear_Cap = False)
+                  and ((Encrypt_Cap = True and Mac_Cap = True) or Handshake_In_The_Clear_Cap = False)
                   --  Pub_Key_ID_Cap:
                   --  [177] If set, the public key of the Requester was provisioned to the Responder.
                   --  The transport layer is responsible for identifying the Responder. In this case,
@@ -315,7 +315,7 @@ package SPDM is
                   --  Handshake_In_The_Clear_Cap:
                   --  [178] If the Responder does not support encryption and message authentication,
                   --  then this bit shall be zero.
-                  and ((Handshake_In_The_Clear_Cap = True and Mac_Cap = True) or Encrypt_Cap = False)
+                  and ((Encrypt_Cap = True and Mac_Cap = True) or Handshake_In_The_Clear_Cap = False)
                   --  Pub_Key_ID_Cap:
                   --  [178] If set, the public key of the Responder was provisioned to the Requester.
                   --  The transport layer is responsible for identifying the Requester. In this case,
@@ -494,7 +494,7 @@ package SPDM is
    with Size => 8;
 
    type Algorithm_ID_16 is mod 2**16;
-   type Algorithm_ID_32 is mod 2**16;
+   type Algorithm_ID_32 is mod 2**32;
 
    type Ext_Alg is
       message
@@ -674,9 +674,9 @@ package SPDM is
             with Size => 32 * Ext_Hash_Count
             then Req_Alg_Structs
                --  Length is the total length of the message, we have to subtract the common header
-               --  of Request.
+               --  consisting of the Version and the Request/Response code of the Request/Response.
                with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
-                  if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
+               if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1);
          Req_Alg_Structs : Req_Alg_Structs;
          -- ISSUE: Componolit/RecordFlux#51
          -- The number of elements should also match Req_Alg_Struct_Count
@@ -728,32 +728,28 @@ package SPDM is
          Resp_Alg_Struct_Count : Alg_Struct_Count;
          Param_2 : Reserved_8;
          Length_1 : Length;
-         Length_2 : Length
-            then Measurement_Specification_Sel
-               if Length_2 * 256 + Length_1 <= 128;
-         Measurement_Specification_Sel: Measurement_Specification;
+         Length_2 : Length;
+         Measurement_Specification_Sel : Measurement_Specification;
          Reserved_1 : Reserved_8;
          Measurement_Hash_Algo : Measurement_Hash_Algo;
          Base_Asym_Sel : Base_Asym_Sel;
          Base_Hash_Sel : Base_Hash_Sel;
          Reserved_2 : Reserved_64;
          Reserved_3 : Reserved_32;
-         Ext_Asym_Count : Ext_Asym_Count
-            then Ext_Hash_Count
-               if Ext_Asym_Count <= 1;
-         Ext_Hash_Count : Ext_Hash_Count
-            then Reserved_4
-               if Ext_Hash_Count <= 1;
+         Ext_Asym_Sel_Count : Ext_Asym_Count
+            if Ext_Asym_Sel_Count <= 1;
+         Ext_Hash_Sel_Count : Ext_Hash_Count
+            if Ext_Hash_Sel_Count <= 1;
          Reserved_4 : Reserved_16;
          Ext_Asym : Ext_Algs
-            with Size => 32 * Ext_Asym_Count;
+            with Size => 32 * Ext_Asym_Sel_Count;
          Ext_Hash : Ext_Algs
-            with Size => 32 * Ext_Hash_Count
+            with Size => 32 * Ext_Hash_Sel_Count
             then Resp_Alg_Structs
                --  Length is the total length of the message, we have to subtract the common header
-               --  of Request.
+               --  consisting of the Version and the Request/Response code of the Request/Response.
                with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1)
-                  if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
+               if 8 * (Length_2 * 256 + Length_1) >= 16 + (Ext_Hash'Last - Resp_Alg_Struct_Count'First + 1);
          Resp_Alg_Structs : Resp_Alg_Structs;
          -- ISSUE: Componolit/RecordFlux#51
          -- The number of elements should also match Resp_Alg_Struct_Count
@@ -772,6 +768,7 @@ package SPDM is
          Param_1 : Reserved_8;
          Slot_Mask : Slot_Mask;
          Digests_Data : Hashes
+            --  ISSUE: RecordFlux-specifications#92
             --  FIXME: Hash'Size should work, but doesn't
             with Size => 8 * 48 * (Slot_Mask_Slot_0_Present
                                    + Slot_Mask_Slot_1_Present
@@ -1371,22 +1368,30 @@ package SPDM is
                                    Minor_Version         => 1,
                                    Major_Version         => 1));
          --  FIXME: Reset all state
+      transition
+         goto Receive
+      exception
+         goto Error_Unspecified
+      end Init;
+
+      state Receive
+      is
+      begin
          Transport'Read (Request);
       transition
          goto Version
-            --  In case a Request is not valid the exception transition
-            --  should be chosen but this is not implemented yet.
-            --  ISSUE: Componolit/RecordFlux#691
+            --  FIXME: [161] After receiving a GET_VERSION request, the Responder shall cancel all previous requests
+            --  from the same Requester. All active sessions between the Requester and the Responder are terminated,
+            --  i.e., information (such as session keys, session IDs) for those sessions should not be used anymore.
+            --  Additionally, this message shall clear or reset the previously Negotiated State, if any,
+            --  in both the Requester and its corresponding Responder.
             if Request'Valid and Request.Code = Get_Version
          goto Capabilities
-            --  ISSUE: Componolit/RecordFlux#691
             if Request'Valid and Request.Code = Get_Capabilities
          goto Error_Unsupported_Request
             if Request'Valid
          goto Error_Invalid_Request
-      exception
-         goto Error_Unspecified
-      end Init;
+      end Receive;
 
       state Version
       is
@@ -1400,17 +1405,8 @@ package SPDM is
                        Version_Response_Reserved                   => 0,
                        Version_Response_Version_Number_Entry_Count => 1,
                        Version_Response_Version_Number_Entries     => Supported_Versions));
-         Transport'Read (Request);
       transition
-         goto Version
-            --  ISSUE: Componolit/RecordFlux#691
-            if Request'Valid and Request.Code = Get_Version
-         goto Capabilities
-            --  ISSUE: Componolit/RecordFlux#691
-            if Request'Valid and Request.Code = Get_Capabilities
-         goto Error_Unsupported_Request
-            if Request'Valid
-         goto Error_Invalid_Request
+         goto Receive
       exception
          goto Error_Unspecified
       end Version;
@@ -1443,14 +1439,8 @@ package SPDM is
                        Capabilities_Response_1_1_Mut_Auth_Cap               => False,
                        Capabilities_Response_1_1_Reserved_4                 => 0,
                        Capabilities_Response_1_1_Pub_Key_ID_Cap             => False));
-         Transport'Read (Request);
       transition
-         goto Version
-            --  ISSUE: Componolit/RecordFlux#691
-            if Request'Valid and Request.Code = Get_Version
-         goto Error_Unsupported_Request
-            if Request'Valid
-         goto Error_Invalid_Request
+         goto Receive
       exception
          goto Error_Unspecified
       end Capabilities;
