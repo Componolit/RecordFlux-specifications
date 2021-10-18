@@ -665,7 +665,19 @@ package SPDM is
          Base_Hash_Algo_Reserved_2 : Reserved_24;
          Reserved_2 : Reserved_64;
          Reserved_3 : Reserved_32;
+         -- FIXME:
+         -- [185]
+         -- ExtAsymCount
+         -- Number of Requester-supported extended asymmetric key signature algorithms (=A).
+         -- A + E + ExtAlgCount2 + ExtAlgCount3 + ExtAlgCount4 + ExtAlgCount5 shall be less than or equal to 20.
+         -- If the capabilities do not support this algorithm, this value is not used and shall be set to zero.
          Ext_Asym_Count : Ext_Asym_Count;
+         -- FIXME:
+         -- [185]
+         -- ExtHashCount
+         -- Number of Requester-supported extended hashing algorithms (=E).
+         -- A + E + ExtAlgCount2 + ExtAlgCount3 + ExtAlgCount4 + ExtAlgCount5 shall be less than or equal to 20.
+         -- If the capabilities do not support this algorithm, this value is not used and shall be set to zero.
          Ext_Hash_Count : Ext_Hash_Count;
          Reserved_4 : Reserved_16;
          Ext_Asym : Ext_Algs
@@ -673,6 +685,7 @@ package SPDM is
          Ext_Hash : Ext_Algs
             with Size => 32 * Ext_Hash_Count
             then Req_Alg_Structs
+               --  ISSUE: Componolit/RecordFlux-specifications#92
                --  Length is the total length of the message, we have to subtract the common header
                --  consisting of the Version and the Request/Response code of the Request/Response.
                with Size => 8 * (Length_2 * 256 + Length_1) - 16 - (Ext_Hash'Last - Req_Alg_Struct_Count'First + 1)
@@ -769,7 +782,6 @@ package SPDM is
          Slot_Mask : Slot_Mask;
          Digests_Data : Hashes
             --  ISSUE: RecordFlux-specifications#92
-            --  FIXME: Hash'Size should work, but doesn't
             with Size => 8 * 48 * (Slot_Mask_Slot_0_Present
                                    + Slot_Mask_Slot_1_Present
                                    + Slot_Mask_Slot_2_Present
@@ -800,6 +812,7 @@ package SPDM is
       message
          Slot : Slot;
          Param_2 : Reserved_8;
+         --  FIXME:
          --  This property must be expressed in the session:
          --     For the first GET_CERTIFICATE request, the Requester shall set this field to 0.
          --     For non-first requests, Offset is the sum of PortionLength values in all previous
@@ -959,8 +972,8 @@ package SPDM is
          Vendor_ID_Len : Vendor_ID_Len
             then Opaque_Error_Data
                with Size => Message'Size - (Vendor_ID_Len'Last - Error_Code'First + 1)
-                  if Vendor_ID_Len = 0
-                     and Registry_ID = Reg_DMTF
+               if Vendor_ID_Len = 0
+                  and Registry_ID = Reg_DMTF
             then Vendor_ID_Double
                if Vendor_ID_Len = 2
                   and (Registry_ID = Reg_TCG
@@ -973,6 +986,9 @@ package SPDM is
                if Vendor_ID_Len = 4
                   and (Registry_ID = Reg_IANA
                        or Registry_ID = Reg_HD_Base_T);
+         --  [394] The value of this field shall indicate the Vendor ID, as assigned
+         --  by the registry or standards body. The Registry or standards body ID table
+         --  describes the length of this field. Shall be in little endian format.
          Vendor_ID_Double : Vendor_ID_Double
             then Opaque_Error_Data
                with Size => Message'Size - (Vendor_ID_Double'Last - Error_Code'First + 1);
@@ -1021,8 +1037,8 @@ package SPDM is
          Vendor_ID_Len : Vendor_ID_Len
             then Opaque_Error_Data
                with Size => Message'Size - (Vendor_ID_Len'Last - Error_Code'First + 1)
-                  if Vendor_ID_Len = 0
-                     and Registry_ID = Reg_DMTF
+               if Vendor_ID_Len = 0
+                  and Registry_ID = Reg_DMTF
             then Vendor_ID_Double
                if Vendor_ID_Len = 2
                   and (Registry_ID = Reg_TCG
@@ -1087,18 +1103,17 @@ package SPDM is
          Mutual_Auth_Encapsulated : Boolean; -- Bit 1
          Mutual_Auth : Boolean               -- Bit 0
             then Reserved_2
-               if --  Bit 1 and Bit 2 shall only be set if Bit 0 is set
+               if --  [422] Bit 1 and Bit 2 shall only be set if Bit 0 is set
                   (Mutual_Auth = False
                    or (Mutual_Auth_Implicit = True
                        or Mutual_Auth_Encapsulated = True))
-                  --  Bit 1 and Bit 2 shall not be set at the same time
+                  --  [422] Bit 1 and Bit 2 shall not be set at the same time
                   and (Mutual_Auth_Implicit = False
                        or Mutual_Auth_Encapsulated = False);
          Reserved_2 : Reserved_4;
          Slot_ID_Param : Narrow_Slot
             then Random_Data
-               --  If MutAuthRequested = 0x00 this field shall be set to 0 and ignored by the
-               --  Requester.
+               --  [422] If MutAuthRequested = 0x00 this field shall be set to 0 and ignored by the Requester.
                if Mutual_Auth = True or Slot_ID_Param = NS_0;
          Random_Data : Opaque
             with Size => 8 * 32;
